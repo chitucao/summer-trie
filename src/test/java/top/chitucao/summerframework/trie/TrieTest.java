@@ -1,20 +1,6 @@
 package top.chitucao.summerframework.trie;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.TypeReference;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.json.JSONUtil;
-import com.google.common.collect.Lists;
-import top.chitucao.summerframework.trie.configuration.Configuration;
-import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
-import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
-import top.chitucao.summerframework.trie.configuration.property.Property;
-import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
-import top.chitucao.summerframework.trie.query.*;
-import junit.framework.TestCase;
-import org.junit.Test;
+import static java.util.stream.Collectors.groupingBy;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -23,7 +9,24 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
+import org.junit.Test;
+
+import com.google.common.collect.Lists;
+
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.json.JSONUtil;
+import junit.framework.TestCase;
+import top.chitucao.summerframework.trie.configuration.Configuration;
+import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
+import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
+import top.chitucao.summerframework.trie.configuration.property.Property;
+import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
+import top.chitucao.summerframework.trie.node.NodeType;
+import top.chitucao.summerframework.trie.query.*;
 
 /**
  * TrieTest
@@ -93,6 +96,22 @@ public class TrieTest {
 
         trie.insert(dataToErase.get(0));
         TestCase.assertEquals(2991, trie.getSize());
+    }
+
+    @Test
+    public void testEraseById() {
+        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+        Configuration configuration = buildConfiguration1();
+        MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
+        for (TrainSourceDO data : dataList) {
+            trie.insert(data);
+        }
+
+        long id = 143859138L;
+        TrainSourceDO eraseData = (TrainSourceDO) trie.dictValues("data", id).iterator().next();
+        trie.erase(eraseData);
+
+        TestCase.assertEquals(3000 - 1, trie.getSize());
     }
 
     @Test
@@ -524,19 +543,19 @@ public class TrieTest {
     private Configuration buildConfiguration2() {
         Configuration configuration = new Configuration();
         // 出发城市
-        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId");
+        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId", NodeType.TREE_MAP);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
         depCityIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 抵达城市
-        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId");
+        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId", NodeType.TREE_MAP);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
         arrCityIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 价格
-        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("price");
+        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("price", NodeType.TREE_MAP);
         arrDistrictIdProperty.setPropertyMapper(t -> ((Double) t.getMinRealPrice()).intValue());
         arrDistrictIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
@@ -547,25 +566,25 @@ public class TrieTest {
     private Configuration buildConfiguration1() {
         Configuration configuration = new Configuration();
         // 出发城市
-        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId");
+        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId", NodeType.TREE_MAP);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
         depCityIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 出发地区
-        CustomizedProperty<TrainSourceDO, Integer> depDistrictIdProperty = new CustomizedProperty<>("depDistrictId");
+        CustomizedProperty<TrainSourceDO, Integer> depDistrictIdProperty = new CustomizedProperty<>("depDistrictId", NodeType.TREE_MAP);
         depDistrictIdProperty.setPropertyMapper(TrainSourceDO::getDepartureDistrictId);
         depDistrictIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(depDistrictIdProperty);
 
         // 抵达城市
-        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId");
+        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId", NodeType.TREE_MAP);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
         arrCityIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 抵达地区
-        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("arrDistrictId");
+        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("arrDistrictId", NodeType.TREE_MAP);
         arrDistrictIdProperty.setPropertyMapper(TrainSourceDO::getArrivalDistrictId);
         arrDistrictIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
@@ -581,13 +600,13 @@ public class TrieTest {
         configuration.addProperty(seatClassProperty);
 
         // id
-        CustomizedProperty<TrainSourceDO, Long> idProperty = new CustomizedProperty<>("id");
+        CustomizedProperty<TrainSourceDO, Long> idProperty = new CustomizedProperty<>("id", NodeType.TREE_MAP);
         idProperty.setPropertyMapper(TrainSourceDO::getId);
         idProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(idProperty);
 
         // 数据
-        CustomizedProperty<TrainSourceDO, TrainSourceDO> dataProperty = new CustomizedProperty<>("data");
+        CustomizedProperty<TrainSourceDO, TrainSourceDO> dataProperty = new CustomizedProperty<>("data", NodeType.TREE_MAP);
         dataProperty.setPropertyMapper(Function.identity());
         dataProperty.setDictKeyMapper(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);

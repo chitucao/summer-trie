@@ -1,8 +1,12 @@
 package top.chitucao.summerframework.trie;
 
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.lang.Pair;
-import cn.hutool.core.util.ZipUtil;
+import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +15,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.lang.Pair;
+import cn.hutool.core.util.ZipUtil;
 import top.chitucao.summerframework.trie.codec.MapTrieProtoBuf;
 import top.chitucao.summerframework.trie.configuration.Configuration;
 import top.chitucao.summerframework.trie.configuration.property.Property;
@@ -21,13 +29,6 @@ import top.chitucao.summerframework.trie.nodemanager.DefaultNodeManagerFactory;
 import top.chitucao.summerframework.trie.nodemanager.NodeManager;
 import top.chitucao.summerframework.trie.nodemanager.NodeManagerFactory;
 import top.chitucao.summerframework.trie.query.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 映射实现的字典树
@@ -40,22 +41,22 @@ public class MapTrie<T> implements Trie<T> {
     /**
      * 根节点
      */
-    private final Node root;
+    private final Node                           root;
 
     /**
      * 记录数据总量
      */
-    private LongAdder size;
+    private LongAdder                            size;
 
     /**
      * 配置
      */
-    private final Configuration configuration;
+    private final Configuration                  configuration;
 
     /**
      * 节点管理器双向链表
      */
-    private final LinkedList<NodeManager<T, ?>> nodeManagers;
+    private final LinkedList<NodeManager<T, ?>>  nodeManagers;
 
     /**
      * 节点管理器名称映射
@@ -270,7 +271,7 @@ public class MapTrie<T> implements Trie<T> {
         propertyCheck(property);
         //noinspection unchecked
         return (List<R>) nodeManagerNameMap.get(property).mappingDictValues(levelSearch(criteria, new Aggregations(), nodeManagerNameMap.get(property).property().level()))
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**
@@ -298,7 +299,7 @@ public class MapTrie<T> implements Trie<T> {
         NodeManager<T, ?> levelManager = iterator.next();
         String levelPropertyName = levelManager.property().name();
         Stream<Map<Number, Node>> curChildMap = cur.map(node -> levelManager.searchAndAgg(node, criteriaMap.get(levelPropertyName), aggregationMap.get(levelPropertyName)))
-                .filter(e -> !e.isEmpty());
+            .filter(e -> !e.isEmpty());
 
         // 3.判断是否还有展示层级后续层级的过滤条件
         int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
@@ -389,7 +390,7 @@ public class MapTrie<T> implements Trie<T> {
      * @return 基于查询条件和展示字段构建的子树
      */
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object treeSearch(Criteria criteria, Aggregations aggregations, String... properties) {
         if (properties == null || properties.length == 0) {
             return Lists.newArrayList();
@@ -464,7 +465,7 @@ public class MapTrie<T> implements Trie<T> {
 
         List<List<Number>> result = Lists.newArrayList();
         dfsSearch(this.root, headNodeManager(), criteria.getCriterionMap(), maxCriteriaLevel, Sets.newHashSet(properties), maxPropertyLevel, aggregations.getAggregationMap(),
-                result, Lists.newArrayList());
+            result, Lists.newArrayList());
 
         return result;
     }
@@ -512,11 +513,23 @@ public class MapTrie<T> implements Trie<T> {
      * @param property 查询字段
      * @return 该字段所有字典值
      */
+    /**
+     * 查询某个字段的对应的字典值
+     *
+     * @param property 查询字段
+     * @param dictKeys 字典key列表
+     * @return 该字段所有字典值
+     */
     @Override
-    public <R> Set<R> dictValues(String property) {
+    public <R> Set<R> dictValues(String property, Number... dictKeys) {
         propertyCheck(property);
+        if (dictKeys == null || dictKeys.length == 0) {
+            //noinspection unchecked
+            return (Set<R>) nodeManagerNameMap.get(property).property().dict().dictValues();
+        }
+        Map<Number, ?> dictAll = nodeManagerNameMap.get(property).property().dict().dictAll();
         //noinspection unchecked
-        return (Set<R>) nodeManagerNameMap.get(property).property().dict().dictValues();
+        return (Set<R>) Arrays.stream(dictKeys).map(dictAll::get).collect(Collectors.toSet());
     }
 
     /**
@@ -544,7 +557,7 @@ public class MapTrie<T> implements Trie<T> {
         MapTrieProtoBuf.Node rootNode = buildToProtoBufNode(MapTrieProtoBuf.Node.newBuilder(), this.root, 0, getDepth(), MapTrieProtoBuf.Node.newBuilder().build());
         List<MapTrieProtoBuf.Dict> dictList = buildToProtoBufDictList();
         MapTrieProtoBuf.Trie trie = MapTrieProtoBuf.Trie.newBuilder().setRoot(rootNode).setSize(Objects.isNull(this.size) ? 0L : this.size.longValue()).addAllDict(dictList)
-                .build();
+            .build();
         return trie.toByteArray();
     }
 
@@ -587,7 +600,7 @@ public class MapTrie<T> implements Trie<T> {
                 dictBuilder.setKeyClazz(Long.class.getName()).setValClazz(Object.class.getName());
             } else {
                 dictBuilder.setKeyClazz(dict.dictAll().keySet().stream().findAny().map(r -> r.getClass().getName()).orElse(null))
-                        .setValClazz(dict.dictAll().values().stream().findAny().map(r -> r.getClass().getName()).orElse(null));
+                    .setValClazz(dict.dictAll().values().stream().findAny().map(r -> r.getClass().getName()).orElse(null));
             }
             try {
                 dictBuilder.setKv(ByteString.copyFrom(ZipUtil.gzip(objectMapper.writeValueAsString(dict.dictAll()), "utf-8")));

@@ -1,12 +1,12 @@
 package top.chitucao.summerframework.trie;
 
-import top.chitucao.summerframework.trie.query.Aggregations;
-import top.chitucao.summerframework.trie.query.Criteria;
-import top.chitucao.summerframework.trie.query.ResultBuilder;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import top.chitucao.summerframework.trie.query.Aggregations;
+import top.chitucao.summerframework.trie.query.Criteria;
+import top.chitucao.summerframework.trie.query.ResultBuilder;
 
 /**
  * 字典树
@@ -111,13 +111,14 @@ public interface Trie<T> {
     Object treeSearch(Criteria criteria, Aggregations aggregations, String... properties);
 
     /**
-     * 查询某个字段的所有字典值
+     * 查询某个字段的对应的字典值
      *
-     * @param property 查询字段
-     * @param <R>      字段数据类型
-     * @return 该字段所有字典值
+     * @param property  查询字段
+     * @param dictKeys  字典key列表
+     * @param <R>       字段数据类型
+     * @return          该字段所有字典值
      */
-    <R> Set<R> dictValues(String property);
+    <R> Set<R> dictValues(String property, Number... dictKeys);
 
     /**
      * 所有字段的字典大小
