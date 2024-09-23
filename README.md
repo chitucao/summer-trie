@@ -1,5 +1,11 @@
 # summer-trie
 
+## 项目地址
+
+github	https://github.com/chitucao/summer-trie.git
+
+gitee 	  https://gitee.com/chitucao/summer-trie.git
+
 ## 介绍
 
 ​	这是一个节点支持任意数据类型的前缀树，适用于大量列表数据的索引和压缩，不同于有限字符集前缀树实现（每个节点表达的状态是同一类型），主要是设计思想是将数据中多个不同类型的字段作为节点，组合成一颗前缀树，提高这些字段的检索性能；
@@ -77,6 +83,16 @@
 
 
 ## 快速开始
+
+### 添加maven坐标
+
+```xml
+<dependency>
+    <groupId>top.chitucao.summerframework</groupId>
+    <artifactId>summer-trie</artifactId>
+    <version>1.0.0.RELEASE</version>
+</dependency>
+```
 
 ### 新建前缀树
 
