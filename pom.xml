@@ -6,13 +6,18 @@
 
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.0.0.RELEASE</version>
+    <version>1.0.1.RELEASE</version>
 
     <packaging>jar</packaging>
 
     <name>summer-trie</name>
     <url>https://github.com/chitucao/summer-trie</url>
-    <description>节点支持任意数据类型的前缀树组件</description>
+    <description>
+        节点支持任意数据类型的前缀树组件
+
+        1.0.0.RELEASE   首个发布版本
+        1.0.1.RELEASE   解决树结构查询的小尾巴问题
+    </description>
 
     <developers>
         <developer>

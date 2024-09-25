@@ -294,6 +294,7 @@ public class TrieTest {
         Aggregations aggregations = new Aggregations();
 
         Object result = trie.treeSearch(criteria, aggregations, "depCityId", "arrCityId", "id");
+        System.out.println(JSONUtil.toJsonStr(result));
 
         Map<Integer, Object> depCityMap2 = (Map) result;
 
@@ -312,9 +313,9 @@ public class TrieTest {
             for (Map.Entry<Integer, Map<Long, List<TrainSourceDO>>> entry1 : arrCityMap1.entrySet()) {
                 Integer arrCityId = entry1.getKey();
                 Map<Long, List<TrainSourceDO>> idMap1 = entry1.getValue();
-                Map<Long, Object> idMap2 = (Map) arrCityMap2.get(arrCityId);
+                List<Integer> idList2 = (List<Integer>) arrCityMap2.get(arrCityId);
                 TestCase.assertTrue(
-                    CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idMap2.keySet().stream().sorted().collect(Collectors.toList())));
+                    CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
             }
         }
     }
@@ -456,8 +457,15 @@ public class TrieTest {
 
     @Test
     public void testZipWithSortProperty() {
-        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+        // json
+        String dataSource = "train_resource_3000.json";
+        List<TrainSourceDO> dataList = getDataList(dataSource);
+        System.out.println("数据量：" + dataList.size());
+
+        long start, end;
+
         Date now = new Date();
+
         for (TrainSourceDO trainSourceDO : dataList) {
             if (Objects.isNull(trainSourceDO.getCreateDate())) {
                 trainSourceDO.setCreateDate(now);
@@ -466,10 +474,12 @@ public class TrieTest {
 
         Configuration configuration1 = buildConfiguration3();
         MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration1);
+        start = System.currentTimeMillis();
         for (TrainSourceDO data : dataList) {
             trie1.insert(data);
         }
-        byte[] bytes1 = trie1.serialize();
+        end = System.currentTimeMillis();
+        System.out.println("未排序构建耗时" + (end - start) + "ms");
 
         Map<String, Integer> dictSizes = trie1.dictSizes();
 
@@ -478,25 +488,72 @@ public class TrieTest {
 
         CollectionUtil.sort(configuration2.getProperties(), Comparator.comparing(e -> dictSizes.get(e.name())));
         MapTrie<TrainSourceDO> trie2 = new MapTrie<>(configuration2);
+        start = System.currentTimeMillis();
         for (TrainSourceDO data : dataList) {
             trie2.insert(data);
         }
+        end = System.currentTimeMillis();
+        System.out.println("排序后构建耗时" + (end - start) + "ms");
+
+        ////
+        File jsonfile = FileUtil.newFile(RESOUCE_FOLDER + "train_resource_origin.json");
+        if (jsonfile.exists()) {
+            jsonfile.delete();
+        }
+        start = System.currentTimeMillis();
+        FileUtil.writeBytes(JSONUtil.toJsonStr(dataList).getBytes(), jsonfile);
+        end = System.currentTimeMillis();
+        System.out.println("原始列表json大小：" + jsonfile.length() + " 序列化耗时：" + (end - start) + "ms");
+
+        // tree1
+        Object treeResult1 = trie1.treeSearch(new Criteria(), new Aggregations(), configuration1.getProperties().stream().map(Property::name).toArray(String[]::new));
+        File tree1 = new File(RESOUCE_FOLDER + "train_resource_origin_tree.json");
+        if (tree1.exists()) {
+            tree1.delete();
+        }
+        start = System.currentTimeMillis();
+        FileUtil.writeBytes(JSONUtil.toJsonStr(treeResult1).getBytes(), tree1);
+        end = System.currentTimeMillis();
+        System.out.println("未排序树json大小：" + tree1.length() + " 序列化耗时：" + (end - start) + "ms");
+
+        // protobuf1
+        start = System.currentTimeMillis();
+        byte[] bytes1 = trie1.serialize();
+        File protobuf1 = new File(RESOUCE_FOLDER + "train_resource_origin_protobuf.dat");
+        if (protobuf1.exists()) {
+            protobuf1.delete();
+        }
+        FileUtil.writeBytes(bytes1, protobuf1);
+        end = System.currentTimeMillis();
+        System.out.println("未排序protobuf序列化大小：" + protobuf1.length() + " 序列化耗时：" + (end - start) + "ms");
+
+        // tree2
+        Object treeResult2 = trie2.treeSearch(new Criteria(), new Aggregations(), configuration2.getProperties().stream().map(Property::name).toArray(String[]::new));
+        File tree2 = new File(RESOUCE_FOLDER + "train_resource_sorted_tree.json");
+        if (tree2.exists()) {
+            tree2.delete();
+        }
+        start = System.currentTimeMillis();
+        FileUtil.writeBytes(JSONUtil.toJsonStr(treeResult2).getBytes(), tree2);
+        end = System.currentTimeMillis();
+        System.out.println("排序后树json大小：" + tree2.length() + " 序列化耗时：" + (end - start) + "ms");
+
+        // protobuf2
+        start = System.currentTimeMillis();
         byte[] bytes2 = trie2.serialize();
+        File protobuf2 = new File(RESOUCE_FOLDER + "train_resource_sorted_protobuf.dat");
+        if (protobuf2.exists()) {
+            protobuf2.delete();
+        }
+        FileUtil.writeBytes(bytes2, protobuf2);
+        end = System.currentTimeMillis();
+        System.out.println("排序后protobuf序列化大小：" + protobuf2.length() + " 序列化耗时：" + (end - start) + "ms");
+
         TestCase.assertTrue(bytes2.length < bytes1.length);
-
-        File zipFile1 = new File(RESOUCE_FOLDER + "train_resource_dump_zip1.dat");
-        if (zipFile1.exists()) {
-            zipFile1.delete();
-        }
-        FileUtil.writeBytes(bytes1, zipFile1);
-
-        File zipFile2 = new File(RESOUCE_FOLDER + "train_resource_dump_zip2.dat");
-        if (zipFile2.exists()) {
-            zipFile2.delete();
-        }
-        FileUtil.writeBytes(bytes2, zipFile2);
-
-        TestCase.assertTrue(FileUtil.size(zipFile2) < FileUtil.size(zipFile1));
+        TestCase.assertTrue(FileUtil.size(protobuf2) < FileUtil.size(protobuf1));
+        TestCase.assertTrue(FileUtil.size(tree2) < FileUtil.size(tree1));
+        TestCase.assertTrue(FileUtil.size(protobuf1) < FileUtil.size(tree1) && FileUtil.size(tree1) < FileUtil.size(jsonfile));
+        TestCase.assertTrue(FileUtil.size(protobuf2) < FileUtil.size(tree2) && FileUtil.size(tree2) < FileUtil.size(jsonfile));
 
         List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
 

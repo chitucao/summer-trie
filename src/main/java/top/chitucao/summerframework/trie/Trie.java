@@ -68,7 +68,7 @@ public interface Trie<T> {
     boolean contains(T t);
 
     /**
-     * 数据查询
+     * 原始数据查询
      * -1.返回的是叶子节点的数据，所以要求叶子节点必须存储数据，属于propertySearch查询最后一层时的特殊情况；
      *
      * @param criteria 查询条件
@@ -77,7 +77,7 @@ public interface Trie<T> {
     List<T> dataSearch(Criteria criteria);
 
     /**
-     * 单层查询
+     * 按层查询
      * -1.指定需要层级对应的字段，返回该层的所有数据，结果会做去重处理；
      *
      * @param criteria 查询条件
@@ -88,7 +88,7 @@ public interface Trie<T> {
     <R> List<R> propertySearch(Criteria criteria, String property);
 
     /**
-     * 多层列表查询
+     * 列表结构查询
      * -1.可以指定多个层级的字段，并将查询结果树平铺成一个列表后返回；
      * -2.支持对字段进行聚合；
      *
@@ -100,7 +100,7 @@ public interface Trie<T> {
     <E> List<E> listSearch(Criteria criteria, Aggregations aggregations, ResultBuilder<E> resultBuilder);
 
     /**
-     * 子树查询
+     * 树结构查询
      * -1.指定查询条件和需要展示的字段，返回前缀树的子树视图
      * -2.只查询一个字段返回去重后list，多个字段返回hashmap，hashmap，是一个树结构；
      *
@@ -111,7 +111,9 @@ public interface Trie<T> {
     Object treeSearch(Criteria criteria, Aggregations aggregations, String... properties);
 
     /**
-     * 查询某个字段的对应的字典值
+     * 字典值查询
+     * -1.返回某个字段的所有字典值，如果不指定dictKeys，则返回所有字典值
+     * -2.最后一层放数据的时候，dictKey一般指定为数据id，这个方法很适合根据id拿到数据
      *
      * @param property  查询字段
      * @param dictKeys  字典key列表

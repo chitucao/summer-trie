@@ -410,13 +410,13 @@ public class MapTrie<T> implements Trie<T> {
         Map result = Maps.newHashMap();
         for (List<Number> fields : dataList) {
             Object cur = result;
-            for (int i = 0; i < fields.size(); i++) {
+            for (int i = 0; i < properties.length; i++) {
                 Object dictValue = propertyNodeManagerList.get(i).property().dict().getDictValue(fields.get(i));
-                if (i < properties.length) {
+                if (i < properties.length - 1) {
                     // 非最后一层是map
                     Map map = (Map) cur;
                     if (!map.containsKey(dictValue)) {
-                        if (i == properties.length - 1) {
+                        if (i == properties.length - 2) {
                             map.put(dictValue, Lists.newArrayList());
                         } else {
                             map.put(dictValue, Maps.newHashMap());
