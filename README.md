@@ -64,7 +64,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 - 这个映射关系主要分为两类，一种是类数字类型，比如字段是日期，金额，数字编号等，可以唯一转换成一个number类型的字典key，这样做的好处是可以做范围查询，另一种是数据本身无法对应这种数字类型的id，是由字典去分配一个自增id，这种情况下这个字段是不支持范围查询的；
 - 所以树节点上存储的实际上就是字典key，是number类型的，只要是number的子类就行，如果字典范围比较小，可以尽量映射成范围较小的数据结构洁身空间；
 - 选用number类型的另外一个好处是一般支持comparable接口，这样节点就可以使用sortedMap，比如treeMap，在例如金额的范围，比较，聚合查询的时候更有优势，对比hashMap，可以降低时间复杂度；
-- 字典是和字段绑定的，并且是支持复用的，如果两棵前缀树用到了同一个字段，用同一个字典也行，可以节省空间；
+- 字典是和字段绑定的，并且是支持复用的，如果两棵前缀树用到了同一个字段，用同一个字典也行，可以节省空间。典型的应用场景为一份数据建立多个前缀树索引的场景，最后数据节点的字典是可以复用的；
 
 
 
@@ -72,12 +72,14 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 
 - 属性描述了选取数据实体的哪个字段作为一个树节点，并指定了这个字段值和字典key的映射关系；
 - 属性的类型目前有两种，一种是simpleProperty，适用于枚举类型，不需要比较和范围查询，另一种CustomProperty，可以手动指定和字典key的映射关系，映射成一个数字，可以支持范围和比较查询；
+- 注意simpleProperty是不能共享的，simpleProperty内部有一个局部变量（自增id），customProperty支持共享；
 
 
 
 ### 配置（Configuration）
 
 - 配置描述了字典树的建立，有哪些字段，字段的顺序关系，是否需要快速删除等等；
+- configuration还提供了一个特殊的方法，sortProperties方法，如果对按添加顺序构建节点不满意，可以在这里调整；
 
 
 
@@ -270,7 +272,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 
 #### 1.按层查询
 
-- 比如盲盒场景中，用户都是选择出发地然后随机抵达地，这里出发地是固定的，所以可以出发地为条件，拿到有效抵达地，出发日期什么的；
+- 比如盲盒场景中，用户都是选择出发地然后随机出发日期，这里出发地是固定的，所以可以以出发地为条件，拿到所有的有效出发日期，然后再拿到有效出发日期下面的抵达地什么的；
 
 ```java
 List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
@@ -284,7 +286,7 @@ List<Integer> indexList2 = trie.<Integer> propertySearch(criteria, "arrCityId").
 
 #### 2.原始数据查询
 
-- 有时候索引中并不包含数据的所有字段，需要拿到原始数据的完整字段进一步过滤，可以直接查询原始数据；
+- 一般来说是不会为数据的所有字段建立索引的，如果希望取到到非索引字段做一些操作，可以用这个方法直接查询最后一层原始数据；
 
 ```shell
 Criteria criteria = new Criteria();
@@ -294,7 +296,11 @@ List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Compar
 
 #### 3.树结构查询
 
-- 树结构看起来比较直观，也可以指定要查询的多个字段组合成一颗树返回；
+- 树结构看起来比较直观，可以指定多个要查询的字段，组合成一颗树返回（这个树结构依然保持了原始数据字段间的关系）；
+
+- 支持聚合（对比mysql你可以这样理解，聚合字段前面的字段都是group by条件。支持多个字段的聚合）；
+
+- 你可以理解这个返回结果是多个hashmap的嵌套，最后一层是一个arrayList；
 
   ```shell
   Criteria criteria = new Criteria();
@@ -307,8 +313,10 @@ List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Compar
 
 - 同树结构查询，不过平铺成了列表，列表是最常用的数据返回方式；
 
-- 是支持聚合的，比如例如出发城市、抵达城市、出发日期、价格构建一颗树，然后对价格进行聚合，就用字典树实现了低价日历，以下是伪代码；
+- 是支持聚合的，比如例如出发城市、抵达城市、出发日期、价格构建一颗树，然后对价格使用最小值聚合，就用字典树实现了低价日历，以下是伪代码；
 
+  时间复杂度是O(1) x O(1) x O(log(d)) x O(log(p))   d是出发抵达地下的有效日期天数，p是有效日期下的价格总数
+  
   ```java
   Trie<FlightUnitVO> trie = inlandFlightTrieIndexManager.getTrie();
   Criteria criteria = buildCriteriaByQueryCondition(request.getQueryCondition());
@@ -334,7 +342,7 @@ List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Compar
   List<Integer> dataList2 = trie.<Integer>dictValues("depCityId").stream().sorted().collect(Collectors.toList());
   ```
 
-- 或者希望通过id拿到原始数据的特殊情况，比直接从树上拿更快，O(1)的复杂度；
+- 下面是字典的一种特殊玩法，如果希望通过id查询，没必要从树上查，可以直接从最后那个数据字典拿，O(1)的复杂度；
 
   ```shell
   long id = 143859138L;
