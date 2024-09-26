@@ -17,6 +17,7 @@
 
         1.0.0.RELEASE   首个发布版本
         1.0.1.RELEASE   解决树结构查询的小尾巴问题
+        1.0.2.RELEASE   字典支持删除
     </description>
 
     <developers>

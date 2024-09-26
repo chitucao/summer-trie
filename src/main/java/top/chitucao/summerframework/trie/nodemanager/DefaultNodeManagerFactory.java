@@ -26,12 +26,6 @@ public class DefaultNodeManagerFactory<T> implements NodeManagerFactory<T> {
     @Override
     public LinkedList<NodeManager<T, ?>> createNodeManagers() {
         Collection<Property> properties = configuration.getProperties();
-        Optional<Integer> maxLevelOptional = properties.stream().map(Property::level).max(Comparator.naturalOrder());
-        maxLevelOptional.ifPresent(maxLevel -> properties.forEach(e -> {
-            if (e.level() == maxLevel) {
-                e.setIsLeaf(true);
-            }
-        }));
         LinkedList<NodeManager<T, ?>> nodeManagers = new LinkedList<>();
         for (Property<T, ?> property : properties) {
             nodeManagers.add(new DefaultNodeManager<>(property));

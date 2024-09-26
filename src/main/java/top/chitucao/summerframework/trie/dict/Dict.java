@@ -86,4 +86,19 @@ public interface Dict<R> {
      */
     boolean containsDictValue(R r);
 
+    /**
+     * 减少一个字典key的数量
+     * 
+     * @param dictKey   字典key
+     * @param count     减少的数量
+     */
+    void decrDictCount(Number dictKey, int count);
+
+    /**
+     * 删除一个字典key
+     *
+     * @param dictKey   字典key
+     */
+    void removeDictKey(Number dictKey);
+
 }

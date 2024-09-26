@@ -1,14 +1,14 @@
 package top.chitucao.summerframework.trie.nodemanager;
 
-import top.chitucao.summerframework.trie.configuration.property.Property;
-import top.chitucao.summerframework.trie.node.Node;
-import top.chitucao.summerframework.trie.query.Aggregation;
-import top.chitucao.summerframework.trie.query.Criterion;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import top.chitucao.summerframework.trie.configuration.property.Property;
+import top.chitucao.summerframework.trie.node.Node;
+import top.chitucao.summerframework.trie.query.Aggregation;
+import top.chitucao.summerframework.trie.query.Criterion;
 
 /**
  * 节点管理器
@@ -48,6 +48,14 @@ public interface NodeManager<T, R> {
      * @return          字段值
      */
     Stream<R> mappingDictValues(Set<Number> dictKeys);
+
+    /**
+     * 数据转换成字典值，再转换成字典key
+     * 
+     * @param t 数据
+     * @return  字典key
+     */
+    Number mappingDictKey(T t);
 
     /**
      * 创建新节点

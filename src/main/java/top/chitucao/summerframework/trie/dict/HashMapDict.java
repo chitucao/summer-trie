@@ -1,8 +1,11 @@
 package top.chitucao.summerframework.trie.dict;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import lombok.Setter;
 
 /**
  * 基于两个HashMap的字典实现
@@ -12,13 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HashMapDict<R> implements Dict<R> {
 
-    protected Map<Number, R> dict;
+    protected Map<Number, R>       dict;
 
-    protected Map<R, Number> indexer;
+    protected Map<R, Number>       indexer;
+
+    protected Map<Number, Integer> counter;
+
+    /** 在字典值数量为0的时候是否删除该字典，如果是定时重建，并且快速删除，则没必要开启这个选项，开启了可以稍微节省点空间 */
+    @Setter
+    protected boolean              removeDictIfNonCount;
 
     public HashMapDict() {
         this.dict = new ConcurrentHashMap<>();
         this.indexer = new ConcurrentHashMap<>();
+        this.counter = new ConcurrentHashMap<>();
+        this.removeDictIfNonCount = false;
     }
 
     /**
@@ -27,6 +38,8 @@ public class HashMapDict<R> implements Dict<R> {
     public HashMapDict(Integer capacity) {
         this.dict = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
         this.indexer = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
+        this.counter = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
+        this.removeDictIfNonCount = false;
     }
 
     @Override
@@ -58,6 +71,7 @@ public class HashMapDict<R> implements Dict<R> {
     public void putDict(Number dictKey, R dictValue) {
         indexer.put(dictValue, dictKey);
         dict.put(dictKey, dictValue);
+        counter.put(dictKey, counter.getOrDefault(dictKey, 0) + 1);
     }
 
     @Override
@@ -66,6 +80,7 @@ public class HashMapDict<R> implements Dict<R> {
         R val = (R) dictValue;
         indexer.put(val, dictKey);
         dict.put(dictKey, val);
+        counter.put(dictKey, counter.getOrDefault(dictKey, 0) + 1);
     }
 
     @Override
@@ -76,5 +91,20 @@ public class HashMapDict<R> implements Dict<R> {
     @Override
     public boolean containsDictValue(R r) {
         return indexer.containsKey(r);
+    }
+
+    @Override
+    public void decrDictCount(Number dictKey, int count) {
+        counter.put(dictKey, counter.get(dictKey) - count);
+        if (removeDictIfNonCount && Objects.equals(counter.get(dictKey), 0)) {
+            removeDictKey(dictKey);
+        }
+    }
+
+    @Override
+    public void removeDictKey(Number dictKey) {
+        indexer.remove(dict.get(dictKey));
+        dict.remove(dictKey);
+        counter.remove(dictKey);
     }
 }

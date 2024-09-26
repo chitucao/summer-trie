@@ -1,7 +1,6 @@
 package top.chitucao.summerframework.trie;
 
 import java.util.*;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,11 +43,6 @@ public class MapTrie<T> implements Trie<T> {
     private final Node                           root;
 
     /**
-     * 记录数据总量
-     */
-    private LongAdder                            size;
-
-    /**
      * 配置
      */
     private final Configuration                  configuration;
@@ -85,6 +79,7 @@ public class MapTrie<T> implements Trie<T> {
 
     /**
      * 数据总量
+     * -1.返回的是最后一层的数据总量
      *
      * @return 数据总量
      */
@@ -93,7 +88,7 @@ public class MapTrie<T> implements Trie<T> {
         if (configuration.isUseFastErase()) {
             return doGetSize(root, 0, getDepth());
         } else {
-            return size.intValue();
+            return tailNodeManager().property().dict().getSize();
         }
     }
 
@@ -107,44 +102,94 @@ public class MapTrie<T> implements Trie<T> {
         Node cur = root;
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             cur = nodeManager.addChildNode(cur, t);
-            if (!configuration.isUseFastErase() && nodeManager.property().isLeaf()) {
-                size.increment();
-            }
         }
     }
 
     /**
      * 删除数据
+     * -1.快速删除模式下返回-1
      *
      * @param criteria 删除条件
+     * @return 删除的数据条数
      */
     @Override
-    public void erase(Criteria criteria) {
+    public int erase(Criteria criteria) {
         if (Objects.isNull(criteria) || criteria.getCriterionList().isEmpty()) {
-            return;
+            return 0;
         }
+        criteriaCheck(criteria);
         if (configuration.isUseFastErase()) {
             fastErase(criteria);
+            return -1;
         } else {
-            normErase(criteria);
+            return normErase(criteria);
         }
     }
 
     /**
      * 普通删除
-     * 先找到符合条件的数据，再依次删除，需要最后一个节点存储数据本身
-     *
-     * @param criteria 删除条件
+    * -1.会维护size变量（getSize的效率比较高）和同步修改dict，需要遍历到最后一层拿到具体的数据，删除效率相对低点；
+     * 
+     * @param criteria  删除条件
      */
-    private void normErase(Criteria criteria) {
-        criteriaCheck(criteria);
-        sortCriteria(criteria);
-        this.dataSearch(criteria).forEach(this::erase);
+    private int normErase(Criteria criteria) {
+        return Math.abs(doNormErase(root, headNodeManager(), criteria.getCriterionMap()));
+    }
+
+    /**
+    * 普通删除
+    
+    * @param cur 当前节点
+    * @param nodeManager 当前节点管理器
+    * @param criteriaMap 查询条件
+    * @return   当前节点删除的数据总量，绝对值表示删除数量，负数表示子节点完全删除
+    */
+    private int doNormErase(Node cur, NodeManager<T, ?> nodeManager, Map<String, Criterion> criteriaMap) {
+        String propertyName = nodeManager.property().name();
+        Criterion criterion = criteriaMap.get(propertyName);
+
+        // 走到这里说明到最后一层了，可以向上删除了
+        // 最后一层可以直接删除字典key，因为都是唯一的
+        if (Objects.isNull(nodeManager.next())) {
+            if (Objects.isNull(criterion)) {
+                Set<Number> dictKeySet = cur.keys();
+                for (Number dictKey : dictKeySet) {
+                    nodeManager.property().dict().removeDictKey(dictKey);
+                }
+                // 负数表示完全删除子节点，所以父节点中这个key也可以删除了
+                return -dictKeySet.size();
+            } else {
+                Set<Number> dictKeySet = nodeManager.search(cur, criterion).keySet();
+                for (Number dictKey : dictKeySet) {
+                    nodeManager.property().dict().removeDictKey(dictKey);
+                    cur.removeChild(dictKey);
+                }
+                return cur.getSize() == 0 ? -dictKeySet.size() : dictKeySet.size();
+            }
+        }
+
+        Map<Number, Node> childMap = Objects.isNull(criterion) ? cur.childMap() : nodeManager.search(cur, criterion);
+        int sum = 0;
+        boolean allChildRemoved = true;
+        Iterator<Map.Entry<Number, Node>> iterator = childMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Number, Node> entry = iterator.next();
+            int removeCount = doNormErase(entry.getValue(), nodeManager.next(), criteriaMap);
+            if (removeCount >= 0) {
+                allChildRemoved = false;
+            } else {
+                iterator.remove();
+            }
+            int removeCountAbs = Math.abs(removeCount);
+            nodeManager.property().dict().decrDictCount(entry.getKey(), removeCountAbs);
+            sum += removeCountAbs;
+        }
+        return allChildRemoved ? -sum : sum;
     }
 
     /**
      * 快速删除
-     * 不会维护size变量，但是删除效率比较高
+     * -1.不会维护size变量和同步修改dict，但是删除效率比较高（不用遍历到最后一层拿到具体的数据），适用于前缀树每次更新是刷新重建的情况；
      *
      * @param criteria 删除条件
      */
@@ -186,7 +231,8 @@ public class MapTrie<T> implements Trie<T> {
         if (Objects.isNull(cur)) {
             return;
         }
-        // 走到这里说明存在该节点，可以删除了
+
+        // 删除节点
         nodeManager = tailNodeManager();
         while (Objects.nonNull(nodeManager)) {
             Node parent = parentNodeStack.pop();
@@ -198,9 +244,14 @@ public class MapTrie<T> implements Trie<T> {
             }
             nodeManager = nodeManager.prev();
         }
-        if (!configuration.isUseFastErase()) {
-            size.decrement();
+
+        // 删除字典
+        nodeManager = headNodeManager();
+        while (Objects.nonNull(nodeManager.next())) {
+            nodeManager.property().dict().decrDictCount(nodeManager.mappingDictKey(t), 1);
+            nodeManager = nodeManager.next();
         }
+        nodeManager.property().dict().removeDictKey(nodeManager.mappingDictKey(t));
     }
 
     /**
@@ -287,7 +338,7 @@ public class MapTrie<T> implements Trie<T> {
         Iterator<NodeManager<T, ?>> iterator = nodeManagers.iterator();
         Map<String, Criterion> criteriaMap = criteria.getCriterionMap();
         Map<String, Aggregation> aggregationMap = aggregations.getAggregationMap();
-        // 1.查询到展示层级
+        // 1.查询到展示字段前
         Stream<Node> cur = Stream.of(root);
         for (int i = 0; i < level; i++) {
             NodeManager<T, ?> nodeManager = iterator.next();
@@ -295,19 +346,19 @@ public class MapTrie<T> implements Trie<T> {
             cur = cur.flatMap(e -> nodeManager.searchAndAgg(e, criteriaMap.get(propertyName), aggregationMap.get(propertyName)).values().stream());
         }
 
-        // 2.对展示层级的数据做过滤
+        // 2.查询展示字段
         NodeManager<T, ?> levelManager = iterator.next();
         String levelPropertyName = levelManager.property().name();
         Stream<Map<Number, Node>> curChildMap = cur.map(node -> levelManager.searchAndAgg(node, criteriaMap.get(levelPropertyName), aggregationMap.get(levelPropertyName)))
             .filter(e -> !e.isEmpty());
 
-        // 3.判断是否还有展示层级后续层级的过滤条件
+        // 3.判断是否还有展示字段后续字段的过滤条件
         int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
         if (levelManager.property().level() >= maxCriteriaLevel) {
-            // 3.1 没有后续层级过滤条件，可以返回了
+            // 3.1 没有后续字段过滤条件，可以返回了
             return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
         } else {
-            // 3.2 还有后续层级过滤条件，判断任意子节点是否满足后续过滤条件
+            // 3.2 还有后续字段过滤条件，判断任意子节点是否满足后续过滤条件
             Set<Number> keys = Sets.newHashSet();
             NodeManager<T, ?> next = iterator.next();
             curChildMap.forEach(map -> map.forEach((k, v) -> {
@@ -508,12 +559,6 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
-     * 查询某个字段的所有字典值
-     *
-     * @param property 查询字段
-     * @return 该字段所有字典值
-     */
-    /**
      * 查询某个字段的对应的字典值
      *
      * @param property 查询字段
@@ -556,8 +601,7 @@ public class MapTrie<T> implements Trie<T> {
     public byte[] serialize() {
         MapTrieProtoBuf.Node rootNode = buildToProtoBufNode(MapTrieProtoBuf.Node.newBuilder(), this.root, 0, getDepth(), MapTrieProtoBuf.Node.newBuilder().build());
         List<MapTrieProtoBuf.Dict> dictList = buildToProtoBufDictList();
-        MapTrieProtoBuf.Trie trie = MapTrieProtoBuf.Trie.newBuilder().setRoot(rootNode).setSize(Objects.isNull(this.size) ? 0L : this.size.longValue()).addAllDict(dictList)
-            .build();
+        MapTrieProtoBuf.Trie trie = MapTrieProtoBuf.Trie.newBuilder().setRoot(rootNode).addAllDict(dictList).build();
         return trie.toByteArray();
     }
 
@@ -829,13 +873,13 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
-     * 数据总量
-     *
-     * @param cur      当前节点
-     * @param depth    当前深度
-     * @param maxDepth 最大深度
-     * @return 数据总量
-     */
+    * 数据总量
+    *
+    * @param cur      当前节点
+    * @param depth    当前深度
+    * @param maxDepth 最大深度
+    * @return 数据总量
+    */
     private int doGetSize(Node cur, int depth, int maxDepth) {
         if (depth == maxDepth) {
             return cur.getSize();
@@ -857,14 +901,6 @@ public class MapTrie<T> implements Trie<T> {
             throw new IllegalStateException("Properties are empty");
         }
         configuration.setLeafNodeAsDataNode(checkNodeAsDataNode(configuration.getLastProperty()));
-        // 如果叶子节点不存储数据本身，则只能使用快速删除
-        if (!configuration.isLeafNodeAsDataNode() && !configuration.isUseFastErase()) {
-            throw new IllegalStateException("Leaf node is not data node, Fast erase support only");
-        }
-        // 不使用快速删除，可以维护数据总量变量
-        if (!configuration.isUseFastErase()) {
-            this.size = new LongAdder();
-        }
     }
 
     /**

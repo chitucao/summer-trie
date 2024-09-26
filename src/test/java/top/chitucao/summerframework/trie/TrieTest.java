@@ -44,7 +44,6 @@ public class TrieTest {
         Configuration configuration = buildConfiguration1();
         MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
 
-        TestCase.assertTrue(configuration.isUseFastErase());
         TestCase.assertEquals(7, trie.getDepth());
         TestCase.assertEquals(0, trie.getSize());
 
@@ -125,13 +124,19 @@ public class TrieTest {
         }
         TestCase.assertEquals(3000, trie.getSize());
 
-        //        long eraseCount = dataList.stream().filter(e -> !Arrays.asList(3105, 3109).contains(e.getDepartureCityId())).count();
-        //        Criteria criteria = new Criteria().addCriterion(Condition.NOT_IN, Arrays.asList(3105, 3109), "depCityId");
-        //        trie.erase(criteria);
+        //        long eraseCount = dataList.stream().filter(e -> Arrays.asList(3105, 3109).contains(e.getDepartureCityId())).count();
+        //        Criteria criteria = new Criteria().addCriterion(Condition.IN, Arrays.asList(3105, 3109), "depCityId");
+        //        int queryCount = trie.dataSearch(criteria).size();
+        //        int count = trie.erase(criteria);
 
         long eraseCount = dataList.stream().filter(e -> e.getDepartureCityId() >= 0 && e.getDepartureCityId() <= 1005).count();
         Criteria criteria = new Criteria().addCriterion(Condition.BETWEEN, 0, 1005, "depCityId");
-        trie.erase(criteria);
+        int queryCount = trie.dataSearch(criteria).size();
+        int count = trie.erase(criteria);
+
+        if (!configuration.isUseFastErase()) {
+            TestCase.assertEquals(queryCount, count);
+        }
 
         TestCase.assertEquals(3000 - eraseCount, trie.getSize());
     }
@@ -314,8 +319,8 @@ public class TrieTest {
                 Integer arrCityId = entry1.getKey();
                 Map<Long, List<TrainSourceDO>> idMap1 = entry1.getValue();
                 List<Integer> idList2 = (List<Integer>) arrCityMap2.get(arrCityId);
-                TestCase.assertTrue(
-                    CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
+                TestCase
+                    .assertTrue(CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
             }
         }
     }
@@ -622,6 +627,7 @@ public class TrieTest {
 
     private Configuration buildConfiguration1() {
         Configuration configuration = new Configuration();
+        configuration.setUseFastErase(true);
         // 出发城市
         CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId", NodeType.TREE_MAP);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);

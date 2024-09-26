@@ -29,16 +29,6 @@ public interface Property<T, R> {
     void setLevel(int level);
 
     /**
-    * 是否是叶子节点
-    * 一般把实体数据放在最后面的节点，当然也可以只存索引信息
-    * 
-    * @return 是否是叶子节点
-    */
-    boolean isLeaf();
-
-    void setIsLeaf(boolean isLeaf);
-
-    /**
      * 节点类型
      * 
      * @return  节点类型

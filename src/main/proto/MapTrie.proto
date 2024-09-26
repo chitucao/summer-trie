@@ -3,8 +3,7 @@ option java_package = "top.chitucao.summerframework.trie.codec";
 option java_outer_classname = "MapTrieProtoBuf";
 message Trie{
   Node root = 1;
-  int64 size = 2;
-  repeated Dict dict = 3;
+  repeated Dict dict = 2;
 }
 message Node {
   map<int64, Node> child = 1;

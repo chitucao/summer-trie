@@ -32,30 +32,25 @@ public final class MapTrieProtoBuf {
     NodeOrBuilder getRootOrBuilder();
 
     /**
-     * <code>int64 size = 2;</code>
-     */
-    long getSize();
-
-    /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     java.util.List<Dict>
         getDictList();
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     Dict getDict(int index);
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     int getDictCount();
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     java.util.List<? extends DictOrBuilder>
         getDictOrBuilderList();
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     DictOrBuilder getDictOrBuilder(
         int index);
@@ -113,15 +108,10 @@ public final class MapTrieProtoBuf {
 
               break;
             }
-            case 16: {
-
-              size_ = input.readInt64();
-              break;
-            }
-            case 26: {
-              if (!((mutable_bitField0_ & 0x00000004) != 0)) {
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
                 dict_ = new java.util.ArrayList<Dict>();
-                mutable_bitField0_ |= 0x00000004;
+                mutable_bitField0_ |= 0x00000002;
               }
               dict_.add(
                   input.readMessage(Dict.parser(), extensionRegistry));
@@ -142,7 +132,7 @@ public final class MapTrieProtoBuf {
         throw new com.google.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000004) != 0)) {
+        if (((mutable_bitField0_ & 0x00000002) != 0)) {
           dict_ = java.util.Collections.unmodifiableList(dict_);
         }
         this.unknownFields = unknownFields.build();
@@ -184,44 +174,35 @@ public final class MapTrieProtoBuf {
       return getRoot();
     }
 
-    public static final int SIZE_FIELD_NUMBER = 2;
-    private long size_;
-    /**
-     * <code>int64 size = 2;</code>
-     */
-    public long getSize() {
-      return size_;
-    }
-
-    public static final int DICT_FIELD_NUMBER = 3;
+    public static final int DICT_FIELD_NUMBER = 2;
     private java.util.List<Dict> dict_;
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     public java.util.List<Dict> getDictList() {
       return dict_;
     }
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     public java.util.List<? extends DictOrBuilder>
         getDictOrBuilderList() {
       return dict_;
     }
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     public int getDictCount() {
       return dict_.size();
     }
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     public Dict getDict(int index) {
       return dict_.get(index);
     }
     /**
-     * <code>repeated .Dict dict = 3;</code>
+     * <code>repeated .Dict dict = 2;</code>
      */
     public DictOrBuilder getDictOrBuilder(
         int index) {
@@ -245,11 +226,8 @@ public final class MapTrieProtoBuf {
       if (root_ != null) {
         output.writeMessage(1, getRoot());
       }
-      if (size_ != 0L) {
-        output.writeInt64(2, size_);
-      }
       for (int i = 0; i < dict_.size(); i++) {
-        output.writeMessage(3, dict_.get(i));
+        output.writeMessage(2, dict_.get(i));
       }
       unknownFields.writeTo(output);
     }
@@ -264,13 +242,9 @@ public final class MapTrieProtoBuf {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(1, getRoot());
       }
-      if (size_ != 0L) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(2, size_);
-      }
       for (int i = 0; i < dict_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, dict_.get(i));
+          .computeMessageSize(2, dict_.get(i));
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -292,8 +266,6 @@ public final class MapTrieProtoBuf {
         if (!getRoot()
             .equals(other.getRoot())) return false;
       }
-      if (getSize()
-          != other.getSize()) return false;
       if (!getDictList()
           .equals(other.getDictList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
@@ -311,9 +283,6 @@ public final class MapTrieProtoBuf {
         hash = (37 * hash) + ROOT_FIELD_NUMBER;
         hash = (53 * hash) + getRoot().hashCode();
       }
-      hash = (37 * hash) + SIZE_FIELD_NUMBER;
-      hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
-          getSize());
       if (getDictCount() > 0) {
         hash = (37 * hash) + DICT_FIELD_NUMBER;
         hash = (53 * hash) + getDictList().hashCode();
@@ -458,11 +427,9 @@ public final class MapTrieProtoBuf {
           root_ = null;
           rootBuilder_ = null;
         }
-        size_ = 0L;
-
         if (dictBuilder_ == null) {
           dict_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000002);
         } else {
           dictBuilder_.clear();
         }
@@ -499,11 +466,10 @@ public final class MapTrieProtoBuf {
         } else {
           result.root_ = rootBuilder_.build();
         }
-        result.size_ = size_;
         if (dictBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) != 0)) {
+          if (((bitField0_ & 0x00000002) != 0)) {
             dict_ = java.util.Collections.unmodifiableList(dict_);
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000002);
           }
           result.dict_ = dict_;
         } else {
@@ -561,14 +527,11 @@ public final class MapTrieProtoBuf {
         if (other.hasRoot()) {
           mergeRoot(other.getRoot());
         }
-        if (other.getSize() != 0L) {
-          setSize(other.getSize());
-        }
         if (dictBuilder_ == null) {
           if (!other.dict_.isEmpty()) {
             if (dict_.isEmpty()) {
               dict_ = other.dict_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000002);
             } else {
               ensureDictIsMutable();
               dict_.addAll(other.dict_);
@@ -581,7 +544,7 @@ public final class MapTrieProtoBuf {
               dictBuilder_.dispose();
               dictBuilder_ = null;
               dict_ = other.dict_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000002);
               dictBuilder_ = 
                 com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getDictFieldBuilder() : null;
@@ -737,38 +700,12 @@ public final class MapTrieProtoBuf {
         return rootBuilder_;
       }
 
-      private long size_ ;
-      /**
-       * <code>int64 size = 2;</code>
-       */
-      public long getSize() {
-        return size_;
-      }
-      /**
-       * <code>int64 size = 2;</code>
-       */
-      public Builder setSize(long value) {
-        
-        size_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>int64 size = 2;</code>
-       */
-      public Builder clearSize() {
-        
-        size_ = 0L;
-        onChanged();
-        return this;
-      }
-
       private java.util.List<Dict> dict_ =
         java.util.Collections.emptyList();
       private void ensureDictIsMutable() {
-        if (!((bitField0_ & 0x00000004) != 0)) {
+        if (!((bitField0_ & 0x00000002) != 0)) {
           dict_ = new java.util.ArrayList<Dict>(dict_);
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000002;
          }
       }
 
@@ -776,7 +713,7 @@ public final class MapTrieProtoBuf {
           Dict, Dict.Builder, DictOrBuilder> dictBuilder_;
 
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public java.util.List<Dict> getDictList() {
         if (dictBuilder_ == null) {
@@ -786,7 +723,7 @@ public final class MapTrieProtoBuf {
         }
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public int getDictCount() {
         if (dictBuilder_ == null) {
@@ -796,7 +733,7 @@ public final class MapTrieProtoBuf {
         }
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Dict getDict(int index) {
         if (dictBuilder_ == null) {
@@ -806,7 +743,7 @@ public final class MapTrieProtoBuf {
         }
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder setDict(
           int index, Dict value) {
@@ -823,7 +760,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder setDict(
           int index, Dict.Builder builderForValue) {
@@ -837,7 +774,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder addDict(Dict value) {
         if (dictBuilder_ == null) {
@@ -853,7 +790,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder addDict(
           int index, Dict value) {
@@ -870,7 +807,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder addDict(
           Dict.Builder builderForValue) {
@@ -884,7 +821,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder addDict(
           int index, Dict.Builder builderForValue) {
@@ -898,7 +835,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder addAllDict(
           Iterable<? extends Dict> values) {
@@ -913,12 +850,12 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder clearDict() {
         if (dictBuilder_ == null) {
           dict_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000002);
           onChanged();
         } else {
           dictBuilder_.clear();
@@ -926,7 +863,7 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Builder removeDict(int index) {
         if (dictBuilder_ == null) {
@@ -939,14 +876,14 @@ public final class MapTrieProtoBuf {
         return this;
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Dict.Builder getDictBuilder(
           int index) {
         return getDictFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public DictOrBuilder getDictOrBuilder(
           int index) {
@@ -956,7 +893,7 @@ public final class MapTrieProtoBuf {
         }
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public java.util.List<? extends DictOrBuilder>
            getDictOrBuilderList() {
@@ -967,14 +904,14 @@ public final class MapTrieProtoBuf {
         }
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Dict.Builder addDictBuilder() {
         return getDictFieldBuilder().addBuilder(
             Dict.getDefaultInstance());
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public Dict.Builder addDictBuilder(
           int index) {
@@ -982,7 +919,7 @@ public final class MapTrieProtoBuf {
             index, Dict.getDefaultInstance());
       }
       /**
-       * <code>repeated .Dict dict = 3;</code>
+       * <code>repeated .Dict dict = 2;</code>
        */
       public java.util.List<Dict.Builder>
            getDictBuilderList() {
@@ -995,7 +932,7 @@ public final class MapTrieProtoBuf {
           dictBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
               Dict, Dict.Builder, DictOrBuilder>(
                   dict_,
-                  ((bitField0_ & 0x00000004) != 0),
+                  ((bitField0_ & 0x00000002) != 0),
                   getParentForChildren(),
                   isClean());
           dict_ = null;
@@ -2557,14 +2494,14 @@ public final class MapTrieProtoBuf {
       descriptor;
   static {
     String[] descriptorData = {
-      "\n\rMapTrie.proto\">\n\004Trie\022\023\n\004root\030\001 \001(\0132\005." +
-      "Node\022\014\n\004size\030\002 \001(\003\022\023\n\004dict\030\003 \003(\0132\005.Dict\"" +
-      "\\\n\004Node\022\037\n\005child\030\001 \003(\0132\020.Node.ChildEntry" +
-      "\0323\n\nChildEntry\022\013\n\003key\030\001 \001(\003\022\024\n\005value\030\002 \001" +
-      "(\0132\005.Node:\0028\001\"6\n\004Dict\022\020\n\010keyClazz\030\001 \001(\t\022" +
-      "\020\n\010valClazz\030\002 \001(\t\022\n\n\002kv\030\003 \001(\014B:\n\'top.chi" +
-      "tucao.summerframework.trie.codecB\017MapTri" +
-      "eProtoBufb\006proto3"
+      "\n\rMapTrie.proto\"0\n\004Trie\022\023\n\004root\030\001 \001(\0132\005." +
+      "Node\022\023\n\004dict\030\002 \003(\0132\005.Dict\"\\\n\004Node\022\037\n\005chi" +
+      "ld\030\001 \003(\0132\020.Node.ChildEntry\0323\n\nChildEntry" +
+      "\022\013\n\003key\030\001 \001(\003\022\024\n\005value\030\002 \001(\0132\005.Node:\0028\001\"" +
+      "6\n\004Dict\022\020\n\010keyClazz\030\001 \001(\t\022\020\n\010valClazz\030\002 " +
+      "\001(\t\022\n\n\002kv\030\003 \001(\014B:\n\'top.chitucao.summerfr" +
+      "amework.trie.codecB\017MapTrieProtoBufb\006pro" +
+      "to3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -2583,7 +2520,7 @@ public final class MapTrieProtoBuf {
     internal_static_Trie_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Trie_descriptor,
-        new String[] { "Root", "Size", "Dict", });
+        new String[] { "Root", "Dict", });
     internal_static_Node_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_Node_fieldAccessorTable = new

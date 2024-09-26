@@ -1,12 +1,12 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
+import java.util.function.Function;
+
+import lombok.Getter;
+import lombok.Setter;
 import top.chitucao.summerframework.trie.dict.Dict;
 import top.chitucao.summerframework.trie.dict.HashMapDict;
 import top.chitucao.summerframework.trie.node.NodeType;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.function.Function;
 
 /**
  * 抽象属性
@@ -74,17 +74,6 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     @Override
     public void setLevel(int level) {
         this.level = level;
-    }
-
-    @Override
-    public boolean isLeaf() {
-        return this.isLeaf;
-    }
-
-    // fixme
-    @Override
-    public void setIsLeaf(boolean isLeaf) {
-        this.isLeaf = isLeaf;
     }
 
     @Override

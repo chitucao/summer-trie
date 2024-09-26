@@ -25,7 +25,7 @@ public interface Trie<T> {
 
     /**
      * 数据总量
-     * 返回的是最后一层的数据总量，快速删除模式下这个方法的效率并不高
+     * 返回的是最后一层的数据总量
      *
      * @return 数据总量
      */
@@ -42,8 +42,9 @@ public interface Trie<T> {
      * 删除数据
      *
      * @param criteria 删除条件
+     * @return 删除的数据条数（快速删除模式下返回-1）
      */
-    void erase(Criteria criteria);
+    int erase(Criteria criteria);
 
     /**
      * 删除数据

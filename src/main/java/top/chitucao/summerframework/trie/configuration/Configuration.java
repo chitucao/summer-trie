@@ -1,11 +1,12 @@
 package top.chitucao.summerframework.trie.configuration;
 
+import java.util.*;
+
 import com.google.common.collect.Lists;
-import top.chitucao.summerframework.trie.configuration.property.Property;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.*;
+import top.chitucao.summerframework.trie.configuration.property.Property;
 
 /**
  * 配置
@@ -26,7 +27,7 @@ public class Configuration {
     @SuppressWarnings("rawtypes")
     private Property                    lastProperty;
 
-    /** 是否使用快速删除 如果删除操作不频繁，可以关掉，这样getSize()方法会快点 */
+    /** 快速删除效率比较高，但是不会维护字典的counter，不支持删除字典数据，并且getSize()方法复杂度高点,适用于字典树每次都是重建的场景 */
     @Getter
     @Setter
     private boolean                     useFastErase;
@@ -38,7 +39,7 @@ public class Configuration {
 
     public Configuration() {
         this.level = 0;
-        this.useFastErase = true;
+        this.useFastErase = false;
     }
 
     @SuppressWarnings("rawtypes")

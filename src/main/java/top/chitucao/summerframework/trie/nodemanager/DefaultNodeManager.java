@@ -1,18 +1,18 @@
 package top.chitucao.summerframework.trie.nodemanager;
 
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import lombok.Getter;
+import lombok.Setter;
 import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.HashMapNode;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.TreeMapNode;
 import top.chitucao.summerframework.trie.query.Aggregation;
 import top.chitucao.summerframework.trie.query.Criterion;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 默认节点管理器
@@ -84,6 +84,11 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
     @Override
     public Stream<R> mappingDictValues(Set<Number> dictKeys) {
         return dictKeys.stream().map(dictKey -> property.dict().getDictValue(dictKey));
+    }
+
+    @Override
+    public Number mappingDictKey(T t) {
+       return property.dict().getDictKey(property.mappingValue(t));
     }
 
     @Override
