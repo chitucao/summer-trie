@@ -93,7 +93,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 <dependency>
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.0.1.RELEASE</version>
+    <version>1.0.2.RELEASE</version>
 </dependency>
 ```
 
