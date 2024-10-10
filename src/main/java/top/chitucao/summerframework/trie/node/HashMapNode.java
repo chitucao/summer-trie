@@ -1,14 +1,15 @@
 package top.chitucao.summerframework.trie.node;
 
-import com.google.common.collect.Maps;
-import lombok.Getter;
-
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import com.google.common.collect.Maps;
+
+import lombok.Getter;
 
 /**
  * HashMapNode
@@ -19,18 +20,18 @@ import java.util.stream.Stream;
 @Getter
 public class HashMapNode implements Node {
 
-    private ConcurrentHashMap<Number, Node> child;
+    private HashMap<Number, Node> child;
 
     public HashMapNode() {
-        this.child = new ConcurrentHashMap<>();
+        this.child = new HashMap<>();
     }
 
     public HashMapNode(Map<Number, Node> child) {
-        this.child = new ConcurrentHashMap<>(child);
+        this.child = new HashMap<>(child);
     }
 
     public HashMapNode(Stream<Number> keys) {
-        this.child = new ConcurrentHashMap<>();
+        this.child = new HashMap<>();
         keys.forEach(key -> {
             child.put(key, EmptyNodeHolder.EMPTY_NODE);
         });
@@ -66,7 +67,7 @@ public class HashMapNode implements Node {
      */
     @Override
     public void setChild(Map<Number, Node> childMap) {
-        this.child = new ConcurrentHashMap<>(childMap);
+        this.child = new HashMap<>(childMap);
     }
 
     @Override

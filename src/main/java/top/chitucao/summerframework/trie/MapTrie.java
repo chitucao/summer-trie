@@ -7,17 +7,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.lang.Pair;
-import cn.hutool.core.util.ZipUtil;
 import top.chitucao.summerframework.trie.codec.MapTrieProtoBuf;
 import top.chitucao.summerframework.trie.configuration.Configuration;
 import top.chitucao.summerframework.trie.configuration.property.Property;
@@ -630,13 +627,13 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
-     * 构建成序列化字典
+     * 构建成序列化字典列表
      *
      * @return 序列化字典列表
      */
     private List<MapTrieProtoBuf.Dict> buildToProtoBufDictList() {
         List<MapTrieProtoBuf.Dict> dictList = new ArrayList<>();
-        ObjectMapper objectMapper = new ObjectMapper();
+
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             Dict<?> dict = nodeManager.property().dict();
             MapTrieProtoBuf.Dict.Builder dictBuilder = MapTrieProtoBuf.Dict.newBuilder();
@@ -646,14 +643,28 @@ public class MapTrie<T> implements Trie<T> {
                 dictBuilder.setKeyClazz(dict.dictAll().keySet().stream().findAny().map(r -> r.getClass().getName()).orElse(null))
                     .setValClazz(dict.dictAll().values().stream().findAny().map(r -> r.getClass().getName()).orElse(null));
             }
-            try {
-                dictBuilder.setKv(ByteString.copyFrom(ZipUtil.gzip(objectMapper.writeValueAsString(dict.dictAll()), "utf-8")));
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException(e);
-            }
+            dictBuilder.addAllMapEntry(buildToProtoBufDictEntryList(dict.dictAll()));
             dictList.add(dictBuilder.build());
         }
         return dictList;
+    }
+
+    /**
+    * 构建成序列化字典值列表
+    *
+    * @return 构建成序列化字典值列表
+    */
+    private List<MapTrieProtoBuf.MapEntry> buildToProtoBufDictEntryList(Map<Number, ?> numberMap) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<MapTrieProtoBuf.MapEntry> entryList = new ArrayList<>();
+        for (Map.Entry<Number, ?> entry : numberMap.entrySet()) {
+            try {
+                entryList.add(MapTrieProtoBuf.MapEntry.newBuilder().setKey(entry.getKey().longValue()).setVal(objectMapper.writeValueAsString(entry.getValue())).build());
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return entryList;
     }
 
     @Override
@@ -664,8 +675,7 @@ public class MapTrie<T> implements Trie<T> {
         } catch (InvalidProtocolBufferException | IORuntimeException e) {
             throw new IllegalStateException(e);
         }
-        @SuppressWarnings("rawtypes")
-        List<Pair<Function<Number, Number>, Function<String, Map>>> dictMapperList = getDictMapperList(trie.getDictList());
+        List<Pair<Function<Number, Number>, Function<String, Object>>> dictMapperList = getDictMapperList(trie.getDictList());
         // 构建节点数据
         buildFromProtoBufNode(this.root, trie.getRoot(), headNodeManager(), dictMapperList);
         // 构建字典数据
@@ -679,15 +689,13 @@ public class MapTrie<T> implements Trie<T> {
      * @param dictMapperList 字典键值映射方法
      */
     @SuppressWarnings("rawtypes")
-    private void buildFromProtoBufDict(List<MapTrieProtoBuf.Dict> dictList, List<Pair<Function<Number, Number>, Function<String, Map>>> dictMapperList) {
+    private void buildFromProtoBufDict(List<MapTrieProtoBuf.Dict> dictList, List<Pair<Function<Number, Number>, Function<String, Object>>> dictMapperList) {
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             int level = nodeManager.property().level();
             Dict<?> dict = nodeManager.property().dict();
-            Pair<Function<Number, Number>, Function<String, Map>> pair = dictMapperList.get(level);
-            Map map = dictMapperList.get(level).getValue().apply(ZipUtil.unGzip(dictList.get(level).getKv().toByteArray(), "utf-8"));
-            for (Object obj : map.entrySet()) {
-                Map.Entry entry = (Map.Entry) obj;
-                dict.putDictObj(pair.getKey().apply((Number) entry.getKey()), entry.getValue());
+            Pair<Function<Number, Number>, Function<String, Object>> pair = dictMapperList.get(level);
+            for (MapTrieProtoBuf.MapEntry entry : dictList.get(level).getMapEntryList()) {
+                dict.putDictObj(pair.getKey().apply(entry.getKey()), pair.getValue().apply(entry.getVal()));
             }
             if (nodeManager.property() instanceof SimpleProperty) {
                 SimpleProperty property = (SimpleProperty) nodeManager.property();
@@ -705,9 +713,8 @@ public class MapTrie<T> implements Trie<T> {
      * @param nodeManager    节点管理器
      * @param dictMapperList 字典键值映射方法列表
      */
-    @SuppressWarnings("rawtypes")
     private void buildFromProtoBufNode(Node cur, MapTrieProtoBuf.Node protoBufCur, NodeManager<T, ?> nodeManager,
-                                       List<Pair<Function<Number, Number>, Function<String, Map>>> dictMapperList) {
+                                       List<Pair<Function<Number, Number>, Function<String, Object>>> dictMapperList) {
         Function<Number, Number> dictKeyMapper = dictMapperList.get(nodeManager.property().level()).getKey();
         NodeManager<T, ?> nextNodeManager = nodeManager.next();
         if (nextNodeManager == null) {
@@ -726,30 +733,27 @@ public class MapTrie<T> implements Trie<T> {
      * @param protoBufDictList 待反序列化的protoBuf字典
      * @return 字典键值映射方法列表
      */
-    @SuppressWarnings("rawtypes")
-    private List<Pair<Function<Number, Number>, Function<String, Map>>> getDictMapperList(List<MapTrieProtoBuf.Dict> protoBufDictList) {
-        List<Pair<Function<Number, Number>, Function<String, Map>>> result = new ArrayList<>();
+    private List<Pair<Function<Number, Number>, Function<String, Object>>> getDictMapperList(List<MapTrieProtoBuf.Dict> protoBufDictList) {
+        List<Pair<Function<Number, Number>, Function<String, Object>>> result = new ArrayList<>();
         for (MapTrieProtoBuf.Dict protoBufDict : protoBufDictList) {
-            result.add(new Pair<>(getDictKeyMapper(protoBufDict.getKeyClazz()), getDictValMapper(protoBufDict.getKeyClazz(), protoBufDict.getValClazz())));
+            result.add(new Pair<>(getDictKeyMapper(protoBufDict.getKeyClazz()), getDictValMapper(protoBufDict.getValClazz())));
         }
         return result;
     }
 
     /**
-     * 获取字典键值对的映射方法
+     * 获取字典值的映射方法
      *
-     * @param dictKeyClazzName 字典key类全路径名
      * @param dictValClazzName 字典val类全路径名
      * @return 字典键值对的映射方法
      */
-    @SuppressWarnings("rawtypes")
-    private Function<String, Map> getDictValMapper(String dictKeyClazzName, String dictValClazzName) {
+    private Function<String, Object> getDictValMapper(String dictValClazzName) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            JavaType javaType = objectMapper.getTypeFactory().constructParametricType(Map.class, Class.forName(dictKeyClazzName), Class.forName(dictValClazzName));
+            Class<?> dictValClazz = Class.forName(dictValClazzName);
             return e -> {
                 try {
-                    return objectMapper.readValue(e, javaType);
+                    return objectMapper.readValue(e, dictValClazz);
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }

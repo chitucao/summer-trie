@@ -11,5 +11,9 @@ message Node {
 message Dict {
   string keyClazz = 1;
   string valClazz = 2;
-  bytes kv = 3;
+  repeated MapEntry mapEntry = 3;
+}
+message MapEntry{
+  int64 key = 1;
+  string val = 2;
 }
