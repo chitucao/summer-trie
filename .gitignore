@@ -65,8 +65,3 @@ node_modules
 .dat
 !/src/test/resources/train_resource_30w.json
 !/src/test/resources/flight_resource_60w.json
-!/src/test/resources/train_resource_origin.json
-!/src/test/resources/train_resource_origin_protobuf.dat
-!/src/test/resources/train_resource_origin_tree.json
-!/src/test/resources/train_resource_sorted_protobuf.dat
-!/src/test/resources/train_resource_sorted_tree.json

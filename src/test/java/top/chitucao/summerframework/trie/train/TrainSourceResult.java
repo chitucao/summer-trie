@@ -1,4 +1,4 @@
-package top.chitucao.summerframework.trie;
+package top.chitucao.summerframework.trie.train;
 
 import lombok.Data;
 

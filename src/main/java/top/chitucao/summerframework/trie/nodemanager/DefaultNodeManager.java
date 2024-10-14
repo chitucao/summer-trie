@@ -88,12 +88,15 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
 
     @Override
     public Number mappingDictKey(T t) {
-       return property.dict().getDictKey(property.mappingValue(t));
+        return property.dict().getDictKey(property.mappingValue(t));
     }
 
     @Override
     public Node addChildNode(Node parent, T t) {
         R val = property.mappingValue(t);
+        if (val == null) {
+            throw new IllegalArgumentException("Cannot add child node with null value. Property: " + property.name() + "Data: " + t.toString());
+        }
         Supplier<Node> childSupplier = next() == null ? this::createNewNode : () -> next.createNewNode();
         Number dictKey = property.mappingDictKey(val);
         property.dict().putDict(dictKey, val);
