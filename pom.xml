@@ -19,6 +19,7 @@
         1.0.1.RELEASE 解决树结构查询的小尾巴问题
         1.0.2.RELEASE 字典支持删除
         1.0.3.RELEASE 序列化方法优化
+        1.0.4.RELEASE 代码优化
     </description>
 
     <developers>
