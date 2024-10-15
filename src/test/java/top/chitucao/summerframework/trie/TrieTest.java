@@ -1,20 +1,5 @@
 package top.chitucao.summerframework.trie;
 
-import static java.util.stream.Collectors.groupingBy;
-
-import java.io.File;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.junit.Test;
-import org.openjdk.jol.info.ClassLayout;
-
-import com.google.common.collect.Lists;
-
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -23,7 +8,9 @@ import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.json.JSONUtil;
+import com.google.common.collect.Lists;
 import junit.framework.TestCase;
+import org.junit.Test;
 import top.chitucao.summerframework.trie.configuration.Configuration;
 import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
 import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
@@ -38,6 +25,16 @@ import top.chitucao.summerframework.trie.train.TrainSourceDO;
 import top.chitucao.summerframework.trie.train.TrainSourceResult;
 import top.chitucao.summerframework.trie.train.TrainSourceResultAgg;
 import top.chitucao.summerframework.trie.train.TrainTrieIndexNames;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
 
 /**
  * TrieTest
@@ -180,7 +177,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -200,11 +197,11 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<Integer> indexList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalCityId).distinct().sorted()
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
-        List<Integer> indexList2 = trie.<Integer> propertySearch(criteria, "arrCityId").stream().sorted().collect(Collectors.toList());
+        List<Integer> indexList2 = trie.<Integer>propertySearch(criteria, "arrCityId").stream().sorted().collect(Collectors.toList());
 
         TestCase.assertTrue(CollectionUtil.isEqualList(indexList1, indexList2));
     }
@@ -220,7 +217,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -293,15 +290,15 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
         Map<Integer, Map<Integer, Map<Long, List<TrainSourceDO>>>> depCityMap1 = dataList1.stream()
-            .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
+                .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
 
         Map<Integer, Map<Integer, List<Long>>> depCityMap0 = dataList1.stream()
-            .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> Lists.newArrayList(e.getId()), (a, b) -> {
-                a.addAll(b);
-                return a;
-            })));
+                .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> Lists.newArrayList(e.getId()), (a, b) -> {
+                    a.addAll(b);
+                    return a;
+                })));
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -314,7 +311,7 @@ public class TrieTest {
         Map<Integer, Object> depCityMap2 = (Map) result;
 
         TestCase.assertTrue(
-            CollectionUtil.isEqualList(depCityMap1.keySet().stream().sorted().collect(Collectors.toList()), depCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
+                CollectionUtil.isEqualList(depCityMap1.keySet().stream().sorted().collect(Collectors.toList()), depCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
 
         String str1 = JSONUtil.toJsonStr(depCityMap0);
         String str2 = JSONUtil.toJsonStr(result);
@@ -324,13 +321,13 @@ public class TrieTest {
             Map<Integer, Map<Long, List<TrainSourceDO>>> arrCityMap1 = entry.getValue();
             Map<Integer, Object> arrCityMap2 = (Map) depCityMap2.get(depCityId);
             TestCase.assertTrue(CollectionUtil.isEqualList(arrCityMap1.keySet().stream().sorted().collect(Collectors.toList()),
-                arrCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
+                    arrCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
             for (Map.Entry<Integer, Map<Long, List<TrainSourceDO>>> entry1 : arrCityMap1.entrySet()) {
                 Integer arrCityId = entry1.getKey();
                 Map<Long, List<TrainSourceDO>> idMap1 = entry1.getValue();
                 List<Integer> idList2 = (List<Integer>) arrCityMap2.get(arrCityId);
                 TestCase
-                    .assertTrue(CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
+                        .assertTrue(CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
             }
         }
     }
@@ -346,7 +343,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<Integer> dataList1 = dataList.stream().filter(e -> !queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalDistrictId).distinct().sorted()
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.NOT_IN, queryDepCityList, "depCityId");
@@ -398,7 +395,7 @@ public class TrieTest {
             Property property = propertyMap1.get(propertyName);
             if (property instanceof SimpleProperty) {
                 TestCase.assertEquals(((SimpleProperty) propertyMap1.get(propertyName)).getDictKeyAdder().getId(),
-                    ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
+                        ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
             }
         }
     }
@@ -448,7 +445,7 @@ public class TrieTest {
 
         MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
         trie2.deserialize(FileUtil.readBytes(dumpFile));
-        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
+        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO>listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
 
         dataList.sort(Comparator.comparing(TrainSourceDO::getId));
         dataList2.sort(Comparator.comparing(TrainSourceDO::getId));
