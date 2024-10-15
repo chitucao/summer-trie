@@ -83,11 +83,6 @@ public class HashMapDict<R> implements Dict<R> {
     }
 
     @Override
-    public boolean containsDictKey(Number dictKey) {
-        return dict.containsKey(dictKey);
-    }
-
-    @Override
     public boolean containsDictValue(R r) {
         return indexer.containsKey(r);
     }

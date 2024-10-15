@@ -1,13 +1,13 @@
 package top.chitucao.summerframework.trie.node;
 
-import lombok.Getter;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import lombok.Getter;
 
 /**
  * TreeMapNode
@@ -43,20 +43,23 @@ public class TreeMapNode implements Node {
 
     @Override
     public Node addChild(Number key, Node childNode) {
-        if (child.containsKey(key)) {
-            return child.get(key);
+        Node exChildNode = child.get(key);
+        if (Objects.nonNull(exChildNode)) {
+            return exChildNode;
         }
         child.put(key, childNode);
-        return child.get(key);
+        return childNode;
     }
 
     @Override
     public Node addChild(Number key, Supplier<Node> childSupplier) {
-        if (child.containsKey(key)) {
-            return child.get(key);
+        Node exChildNode = child.get(key);
+        if (Objects.nonNull(exChildNode)) {
+            return exChildNode;
         }
-        child.put(key, childSupplier.get());
-        return child.get(key);
+        Node childNode = childSupplier.get();
+        child.put(key, childNode);
+        return childNode;
     }
 
     @Override

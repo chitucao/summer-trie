@@ -69,6 +69,7 @@ public class Configuration {
         entryList.sort((o1, o2) -> comparator.compare(o1.getKey(), o2.getKey()));
         properties.clear();
         this.level = 0;
+        //noinspection rawtypes
         for (Map.Entry<String, Property> entry : entryList) {
             entry.getValue().setLevel(level++);
             properties.put(entry.getKey(), entry.getValue());

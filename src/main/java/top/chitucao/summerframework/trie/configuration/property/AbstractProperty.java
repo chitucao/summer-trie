@@ -21,9 +21,6 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     /** 层级 */
     protected int            level;
 
-    /** 是否是叶子节点 */
-    protected boolean        isLeaf;
-
     /** 节点类型 */
     @Getter
     protected final NodeType nodeType;
@@ -69,7 +66,6 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
         return this.level;
     }
 
-    // fixme
     @Override
     public void setLevel(int level) {
         this.level = level;

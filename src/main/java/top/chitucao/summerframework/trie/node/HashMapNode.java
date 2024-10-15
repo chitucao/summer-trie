@@ -43,20 +43,23 @@ public class HashMapNode implements Node {
 
     @Override
     public Node addChild(Number key, Node childNode) {
-        if (child.containsKey(key)) {
-            return child.get(key);
+        Node exChildNode = child.get(key);
+        if (Objects.nonNull(exChildNode)) {
+            return exChildNode;
         }
         child.put(key, childNode);
-        return child.get(key);
+        return childNode;
     }
 
     @Override
-    public Node addChild(Number key, Supplier<Node> childNodeSupplier) {
-        if (child.containsKey(key)) {
-            return child.get(key);
+    public Node addChild(Number key, Supplier<Node> childSupplier) {
+        Node exChildNode = child.get(key);
+        if (Objects.nonNull(exChildNode)) {
+            return exChildNode;
         }
-        child.put(key, childNodeSupplier.get());
-        return child.get(key);
+        Node childNode = childSupplier.get();
+        child.put(key, childNode);
+        return childNode;
     }
 
     /**

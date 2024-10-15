@@ -59,17 +59,6 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
     }
 
     @Override
-    public Node createNewNode(Map<Number, Node> childMap) {
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (property.nodeType()) {
-            case TREE_MAP:
-                return new TreeMapNode(childMap);
-            default:
-                return new HashMapNode(childMap);
-        }
-    }
-
-    @Override
     public Node createEmptyValueNode(Stream<Number> keys) {
         //noinspection SwitchStatementWithTooFewBranches
         switch (property.nodeType()) {
@@ -100,15 +89,6 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
         Number dictKey = property.mappingDictKey(val);
         property.dict().putDict(dictKey, val);
         return parent.addChild(dictKey, childSupplier);
-    }
-
-    @Override
-    public Node addChildNode(Node parent, Object val1, Supplier<Node> childNodeSupplier) {
-        @SuppressWarnings("unchecked")
-        R val = (R) val1;
-        Number dictKey = property.mappingDictKey(val);
-        property.dict().putDict(dictKey, val);
-        return parent.addChild(dictKey, childNodeSupplier);
     }
 
     @Override

@@ -70,14 +70,6 @@ public interface Dict<R> {
     void putDictObj(Number dictKey, Object dictValue);
 
     /**
-     * 是否包含某个字典key
-     *
-     * @param dictKey 字典key
-     * @return 是否包含某个字典key
-     */
-    boolean containsDictKey(Number dictKey);
-
-    /**
      * 是否包含某个字段
      *
      * @param r 字段

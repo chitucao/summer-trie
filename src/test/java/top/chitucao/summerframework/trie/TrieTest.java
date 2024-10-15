@@ -610,13 +610,6 @@ public class TrieTest {
     }
 
     @Test
-    public void testArrMemory() {
-        int[] arr = new int[2048];
-        Arrays.fill(arr, 1);
-        System.out.println(ClassLayout.parseInstance(arr).toPrintable());
-    }
-
-    @Test
     public void testTrainDeserializeMemoryUse() {
         long start, end;
         Supplier<Configuration> buildConfigurationSupplier = this::buildTrainQueryTrieConfiguration;

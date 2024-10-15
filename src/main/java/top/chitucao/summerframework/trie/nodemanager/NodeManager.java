@@ -64,14 +64,6 @@ public interface NodeManager<T, R> {
     Node createNewNode();
 
     /**
-     * 创建新节点，根据提供的子节点映射初始化
-     * 
-     * @param childMap  子节点映射
-     * @return          新节点
-     */
-    Node createNewNode(Map<Number, Node> childMap);
-
-    /**
     * 创建空值节点
     * 一般用于最后一层
     * 
@@ -88,17 +80,6 @@ public interface NodeManager<T, R> {
      * @return          子节点
      */
     Node addChildNode(Node parent, T t);
-
-    /**
-     * 添加子节点
-     * 有的情况下，并不是按照顺序创建下一层节点，需要手动指定下一层节点的创建方式
-     *
-     * @param parent                父节点
-     * @param val                   节点值
-     * @param childNodeSupplier     指定子节点的创建方式
-     * @return                      子节点
-     */
-    Node addChildNode(Node parent, Object val, Supplier<Node> childNodeSupplier);
 
     /**
      * 删除子节点
