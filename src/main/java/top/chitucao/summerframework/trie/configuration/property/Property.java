@@ -8,8 +8,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
  * @param <T>   实体
  * @param <R>   字段值（字段值是实际存在节点中的数据）
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Property.java, v 0.1 2024-08-07 下午3:51 chitucao Exp $$
+ * @author chitucao
  */
 public interface Property<T, R> {
     /**

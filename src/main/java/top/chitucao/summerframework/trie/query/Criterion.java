@@ -5,8 +5,7 @@ import lombok.Data;
 /**
  * Criterion
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Criterion.java, v 0.1 2024-08-08 下午3:33 chitucao Exp $$
+ * @author chitucao
  */
 @Data
 public class Criterion {

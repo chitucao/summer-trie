@@ -3,8 +3,7 @@ package top.chitucao.summerframework.trie.train;
 /**
  * 火车票
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: TrainTrieIndexProperty.java, v 0.1 2024-09-03 11:05 chitucao Exp $$
+ * @author chitucao
  */
 public class TrainTrieIndexNames {
 

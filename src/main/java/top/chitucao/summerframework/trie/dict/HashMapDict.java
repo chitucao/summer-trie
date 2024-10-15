@@ -10,8 +10,7 @@ import lombok.Setter;
 /**
  * 基于两个HashMap的字典实现
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: HashMapDict.java, v 0.1 2024-09-05 15:35 chitucao Exp $$
+ * @author chitucao
  */
 public class HashMapDict<R> implements Dict<R> {
 

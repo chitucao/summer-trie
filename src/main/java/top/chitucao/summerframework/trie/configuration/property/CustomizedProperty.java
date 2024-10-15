@@ -13,8 +13,7 @@ import java.util.function.Function;
  * -2.比如金额，数字，日期等可以转换成一个对应的的数字；
  * -3.范围和比较查询时推荐和TreeMapNode结合使用，查询时间复杂度会降低到logn；
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: CustomizedProperty.java, v 0.1 2024-08-09 下午2:27 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 @Setter

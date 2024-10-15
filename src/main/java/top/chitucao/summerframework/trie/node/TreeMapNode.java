@@ -12,8 +12,7 @@ import java.util.stream.Stream;
 /**
  * TreeMapNode
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: TreeMapNode.java, v 0.1 2024-08-06 下午9:30 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 public class TreeMapNode implements Node {

@@ -14,8 +14,7 @@ import lombok.Getter;
 /**
  * HashMapNode
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: HashMapNode.java, v 0.1 2024-08-06 下午9:36 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 public class HashMapNode implements Node {

@@ -11,8 +11,7 @@ import top.chitucao.summerframework.trie.configuration.property.Property;
 /**
  * 配置
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Configuration.java, v 0.1 2024-09-11 16:12 chitucao Exp $$
+ * @author chitucao
  */
 public class Configuration {
 

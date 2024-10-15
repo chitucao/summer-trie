@@ -7,8 +7,7 @@ import java.util.function.Supplier;
 /**
  * 节点
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Node.java, v 0.1 2024-08-06 下午4:58 chitucao Exp $$
+ * @author chitucao
  */
 public interface Node {
     /**

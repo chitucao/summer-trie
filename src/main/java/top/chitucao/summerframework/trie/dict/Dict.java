@@ -12,8 +12,7 @@ import java.util.Set;
  * -5.针对某个字段的字典，也可以被多个前缀树共享，进一步节省空间；
  * -6.如果字段有枚举，可以直接用现有的枚举实现这个字典；
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Dict.java, v 0.1 2024-09-05 15:29 chitucao Exp $$
+ * @author chitucao
  */
 public interface Dict<R> {
 

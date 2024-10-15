@@ -5,8 +5,7 @@ import java.util.LinkedList;
 /**
  * 节点管理器
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NodeManagerFactory.java, v 0.1 2024-08-08 上午10:50 chitucao Exp $$
+ * @author chitucao
  */
 public interface NodeManagerFactory<T> {
 

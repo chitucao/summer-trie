@@ -17,8 +17,7 @@ import top.chitucao.summerframework.trie.query.Criterion;
 /**
  * 默认节点管理器
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: DefaultNodeManager.java, v 0.1 2024-08-06 下午4:14 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 @Setter

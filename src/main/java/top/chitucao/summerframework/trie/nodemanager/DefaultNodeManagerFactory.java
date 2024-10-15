@@ -11,8 +11,7 @@ import java.util.Optional;
 /**
  * 默认节点管理器工厂实现
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: DefaultNodeManagerFactory.java, v 0.1 2024-08-07 下午4:41 chitucao Exp $$
+ * @author chitucao
  */
 public class DefaultNodeManagerFactory<T> implements NodeManagerFactory<T> {
 

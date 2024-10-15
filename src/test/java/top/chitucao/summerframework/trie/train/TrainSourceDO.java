@@ -8,8 +8,7 @@ import java.util.Date;
 /**
  * BlindboxTrainSourceDO
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: BlindboxTrainSourceDO.java, v 0.1 2024-08-09 下午1:39 chitucao Exp $$
+ * @author chitucao
  */
 @Data
 public class TrainSourceDO implements Serializable {

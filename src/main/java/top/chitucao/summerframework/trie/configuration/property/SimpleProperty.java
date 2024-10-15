@@ -9,8 +9,7 @@ import lombok.Getter;
  * -2.由于字典key没有表达顺序关系，所以仅支持等值匹配，不支持比较、范围查询；
  * -3.根据字段值的范围给字典key选择合适数据类型可以节省一部分字典空间，比如字段所有不同的值不超过128，使用byte类型也就足够了；
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: SimpleProperty.java, v 0.1 2024-08-09 下午2:38 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 public class SimpleProperty<T, R> extends AbstractProperty<T, R> {

@@ -11,8 +11,7 @@ import top.chitucao.summerframework.trie.query.ResultBuilder;
 /**
  * 字典树
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Trie.java, v 0.1 2024-08-06 下午3:59 chitucao Exp $$
+ * @author chitucao
  */
 public interface Trie<T> {
 

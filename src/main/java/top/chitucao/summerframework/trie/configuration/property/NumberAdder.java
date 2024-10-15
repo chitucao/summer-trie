@@ -8,8 +8,7 @@ import java.util.function.Function;
 /**
  * 数字自增管理
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NumberAdder.java, v 0.1 2024-08-06 下午7:35 chitucao Exp $$
+ * @author chitucao
  */
 public class NumberAdder {
     private final AtomicLong                                      id = new AtomicLong();

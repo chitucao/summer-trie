@@ -8,8 +8,7 @@ import java.util.Map;
 /**
  * Aggrega
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Aggrega.java, v 0.1 2024-09-18 13:51 chitucao Exp $$
+ * @author chitucao
  */
 public class Aggregations {
 

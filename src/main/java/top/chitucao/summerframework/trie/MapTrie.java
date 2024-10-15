@@ -29,8 +29,7 @@ import top.chitucao.summerframework.trie.query.*;
 /**
  * 映射实现的字典树
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: MapTrie.java, v 0.1 2024-08-06 下午4:02 chitucao Exp $$
+ * @author chitucao
  */
 public class MapTrie<T> implements Trie<T> {
 

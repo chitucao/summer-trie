@@ -3,8 +3,7 @@ package top.chitucao.summerframework.trie.flight;
 /**
  * FlightTrieIndexNames
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: FlightTrieIndexNames.java, v 0.1 2024-09-03 14:57 chitucao Exp $$
+ * @author chitucao
  */
 public class FlightTrieIndexNames {
 

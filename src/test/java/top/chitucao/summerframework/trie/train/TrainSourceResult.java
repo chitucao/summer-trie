@@ -7,8 +7,7 @@ import java.io.Serializable;
 /**
  * TrainSourceResult
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: TrainSourceResult.java, v 0.1 2024-09-19 11:10 chitucao Exp $$
+ * @author chitucao
  */
 @Data
 public class TrainSourceResult implements Serializable {

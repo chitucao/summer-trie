@@ -11,8 +11,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
 /**
  * 抽象属性
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: AbstractProperty.java, v 0.1 2024-08-09 下午4:06 chitucao Exp $$
+ * @author chitucao
  */
 public abstract class AbstractProperty<T, R> implements Property<T, R> {
 

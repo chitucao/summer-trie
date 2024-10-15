@@ -11,8 +11,7 @@ import java.util.function.Supplier;
  * 结果数据构建
  * @param <E> 结果数据类型
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: ResultBuilder.java, v 0.1 2024-09-18 14:10 chitucao Exp $$
+ * @author chitucao
  */
 @Getter
 public class ResultBuilder<E> {

@@ -42,8 +42,7 @@ import top.chitucao.summerframework.trie.train.TrainTrieIndexNames;
 /**
  * TrieTest
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: TrieTest.java, v 0.1 2024-08-09 下午1:31 chitucao Exp $$
+ * @author chitucao
  */
 public class TrieTest {
 
@@ -640,7 +639,7 @@ public class TrieTest {
         printMemoryUse();
 
         // 清空叶子节点的数据
-        clearDictData(configuration.getLastProperty().dict());
+//        clearDictData(configuration.getLastProperty().dict());
         triggerGc();
         printMemoryUse();
 
@@ -670,7 +669,7 @@ public class TrieTest {
         printMemoryUse();
 
         // 清空叶子节点的数据
-        clearDictData(configuration.getLastProperty().dict());
+//        clearDictData(configuration.getLastProperty().dict());
         triggerGc();
         printMemoryUse();
 

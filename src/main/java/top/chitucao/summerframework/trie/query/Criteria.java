@@ -11,8 +11,7 @@ import java.util.stream.Collectors;
 /**
  * 查询条件
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Criteria.java, v 0.1 2024-08-08 下午3:33 chitucao Exp $$
+ * @author chitucao
  */
 public class Criteria {
 

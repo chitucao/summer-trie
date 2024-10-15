@@ -8,8 +8,7 @@ import lombok.Data;
 /**
  * FlightVO
  *
- * @author hing(huangxin 1011853)
- * @version Id: FlightVO, v 0.1 2021/8/13 2:20 下午 huangxin Exp $
+ * @author chitucao
  */
 @Data
 public class FlightResourceDO implements Serializable {

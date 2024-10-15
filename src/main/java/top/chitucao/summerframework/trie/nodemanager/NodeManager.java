@@ -15,8 +15,7 @@ import top.chitucao.summerframework.trie.query.Criterion;
  * -1.主要是管理节点的创建销毁，节点和字典的映射，以及父子节点之间的关系；
  * -2.是一个链式结构，每个对应一层，管理一个字段；
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NodeManager.java, v 0.1 2024-08-06 下午4:01 chitucao Exp $$
+ * @author chitucao
  */
 public interface NodeManager<T, R> {
 
