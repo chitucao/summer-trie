@@ -974,7 +974,7 @@ public class MapTrie<T> implements Trie<T> {
         @SuppressWarnings("rawtypes")
         Map<String, BiConsumer> setterMap = resultBuilder.getSetterMap();
         if (setterMap.isEmpty()) {
-            return;
+            throw new IllegalArgumentException("ResultBuilder setter map is empty");
         }
         Set<String> propertySet = new HashSet<>();
         //noinspection rawtypes

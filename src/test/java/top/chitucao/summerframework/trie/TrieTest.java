@@ -1,30 +1,6 @@
 package top.chitucao.summerframework.trie;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.TypeReference;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.json.JSONUtil;
-import com.google.common.collect.Lists;
-import junit.framework.TestCase;
-import org.junit.Test;
-import top.chitucao.summerframework.trie.configuration.Configuration;
-import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
-import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
-import top.chitucao.summerframework.trie.configuration.property.Property;
-import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
-import top.chitucao.summerframework.trie.dict.Dict;
-import top.chitucao.summerframework.trie.flight.FlightResourceDO;
-import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
-import top.chitucao.summerframework.trie.node.NodeType;
-import top.chitucao.summerframework.trie.query.*;
-import top.chitucao.summerframework.trie.train.TrainSourceDO;
-import top.chitucao.summerframework.trie.train.TrainSourceResult;
-import top.chitucao.summerframework.trie.train.TrainSourceResultAgg;
-import top.chitucao.summerframework.trie.train.TrainTrieIndexNames;
+import static java.util.stream.Collectors.groupingBy;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -34,7 +10,37 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
+import org.junit.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.json.JSONUtil;
+import junit.framework.TestCase;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import top.chitucao.summerframework.trie.configuration.Configuration;
+import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
+import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
+import top.chitucao.summerframework.trie.configuration.property.Property;
+import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
+import top.chitucao.summerframework.trie.flight.FlightResourceDO;
+import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
+import top.chitucao.summerframework.trie.node.NodeType;
+import top.chitucao.summerframework.trie.query.*;
+import top.chitucao.summerframework.trie.train.TrainSourceDO;
+import top.chitucao.summerframework.trie.train.TrainSourceResult;
+import top.chitucao.summerframework.trie.train.TrainSourceResultAgg;
+import top.chitucao.summerframework.trie.train.TrainTrieIndexNames;
 
 /**
  * TrieTest
@@ -43,6 +49,7 @@ import static java.util.stream.Collectors.groupingBy;
  */
 public class TrieTest {
 
+    // 改成你自己的resouce路径
     private static final String RESOUCE_FOLDER = "D:\\Develop\\Personal\\category_project\\summer-trie\\src\\test\\resources\\";
 
     @Test
@@ -177,7 +184,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -197,11 +204,11 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<Integer> indexList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalCityId).distinct().sorted()
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
-        List<Integer> indexList2 = trie.<Integer>propertySearch(criteria, "arrCityId").stream().sorted().collect(Collectors.toList());
+        List<Integer> indexList2 = trie.<Integer> propertySearch(criteria, "arrCityId").stream().sorted().collect(Collectors.toList());
 
         TestCase.assertTrue(CollectionUtil.isEqualList(indexList1, indexList2));
     }
@@ -217,7 +224,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -290,15 +297,15 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
         Map<Integer, Map<Integer, Map<Long, List<TrainSourceDO>>>> depCityMap1 = dataList1.stream()
-                .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
+            .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
 
         Map<Integer, Map<Integer, List<Long>>> depCityMap0 = dataList1.stream()
-                .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> Lists.newArrayList(e.getId()), (a, b) -> {
-                    a.addAll(b);
-                    return a;
-                })));
+            .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> Lists.newArrayList(e.getId()), (a, b) -> {
+                a.addAll(b);
+                return a;
+            })));
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
@@ -311,7 +318,7 @@ public class TrieTest {
         Map<Integer, Object> depCityMap2 = (Map) result;
 
         TestCase.assertTrue(
-                CollectionUtil.isEqualList(depCityMap1.keySet().stream().sorted().collect(Collectors.toList()), depCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
+            CollectionUtil.isEqualList(depCityMap1.keySet().stream().sorted().collect(Collectors.toList()), depCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
 
         String str1 = JSONUtil.toJsonStr(depCityMap0);
         String str2 = JSONUtil.toJsonStr(result);
@@ -321,13 +328,13 @@ public class TrieTest {
             Map<Integer, Map<Long, List<TrainSourceDO>>> arrCityMap1 = entry.getValue();
             Map<Integer, Object> arrCityMap2 = (Map) depCityMap2.get(depCityId);
             TestCase.assertTrue(CollectionUtil.isEqualList(arrCityMap1.keySet().stream().sorted().collect(Collectors.toList()),
-                    arrCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
+                arrCityMap2.keySet().stream().sorted().collect(Collectors.toList())));
             for (Map.Entry<Integer, Map<Long, List<TrainSourceDO>>> entry1 : arrCityMap1.entrySet()) {
                 Integer arrCityId = entry1.getKey();
                 Map<Long, List<TrainSourceDO>> idMap1 = entry1.getValue();
                 List<Integer> idList2 = (List<Integer>) arrCityMap2.get(arrCityId);
                 TestCase
-                        .assertTrue(CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
+                    .assertTrue(CollectionUtil.isEqualList(idMap1.keySet().stream().sorted().collect(Collectors.toList()), idList2.stream().sorted().collect(Collectors.toList())));
             }
         }
     }
@@ -343,7 +350,7 @@ public class TrieTest {
 
         List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
         List<Integer> dataList1 = dataList.stream().filter(e -> !queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalDistrictId).distinct().sorted()
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
 
         Criteria criteria = new Criteria();
         criteria.addCriterion(Condition.NOT_IN, queryDepCityList, "depCityId");
@@ -395,7 +402,7 @@ public class TrieTest {
             Property property = propertyMap1.get(propertyName);
             if (property instanceof SimpleProperty) {
                 TestCase.assertEquals(((SimpleProperty) propertyMap1.get(propertyName)).getDictKeyAdder().getId(),
-                        ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
+                    ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
             }
         }
     }
@@ -445,7 +452,7 @@ public class TrieTest {
 
         MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
         trie2.deserialize(FileUtil.readBytes(dumpFile));
-        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO>listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
+        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
 
         dataList.sort(Comparator.comparing(TrainSourceDO::getId));
         dataList2.sort(Comparator.comparing(TrainSourceDO::getId));
@@ -629,7 +636,7 @@ public class TrieTest {
         printMemoryUse();
 
         // 清空叶子节点的数据
-//        clearDictData(configuration.getLastProperty().dict());
+        //        clearDictData(configuration.getLastProperty().dict());
         triggerGc();
         printMemoryUse();
 
@@ -659,11 +666,161 @@ public class TrieTest {
         printMemoryUse();
 
         // 清空叶子节点的数据
-//        clearDictData(configuration.getLastProperty().dict());
+        //        clearDictData(configuration.getLastProperty().dict());
         triggerGc();
         printMemoryUse();
 
         System.out.println("数据量：" + trie.getSize() + " protobuf反序列化耗时：" + (end - start) + "ms");
+    }
+
+    //    @Test
+    public void testSplitJson() {
+        String dataSource = "flight_resource_60w.json";
+        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
+            System.out.println("flight_resource_60w.json not found！");
+            return;
+        }
+        List<FlightResourceDO> dataList = getFlightDataList(dataSource);
+        File file = new File(RESOUCE_FOLDER + "flight_resource_5000.json");
+        try {
+            List<FlightResourceDO> data = CollUtil.split(dataList, 5000).get(2);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(file, data);
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    @Test
+    public void testCache() {
+        String dataSource = "flight_resource_5000.json";
+        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
+            System.out.println("flight_resource_5000.json not found！");
+            return;
+        }
+
+        // 项目启动时会缓存一些热点业务数据到内存，这些数据的特点是访问频繁但一般不做修改
+        // 通常是基于一个hashmap来实现，如何设置key通常是按照业务要求来，比如第一个版本要求按照出发日期+出发地维度来缓存
+        List<FlightResourceDO> dataList = getFlightDataList(dataSource);
+        Map<String, List<FlightResourceDO>> hashMapCache1 = dataList.stream()
+            .collect(groupingBy(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity()));
+        // 后续业务迭代了，还有个地方要求按照出发日期+出发地+抵达地维度来缓存，简单的办法就是再增加一个hashmap
+        Map<String, List<FlightResourceDO>> hashMapCache2 = dataList.stream()
+            .collect(groupingBy(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+        // 可以看到每次新增一个查询维度，都需要重新编写代码新建一个hashmap，并增加了重复的数据，如果数据要做更新的话，两个map都要更新，还可能引入数据一致性问题
+
+        // Trie可以解决上面的几个问题，下面是基于trie的实现
+        Configuration configuration = new Configuration();
+        // 出发日期
+        CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+        depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
+        depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        configuration.addProperty(depDateProperty);
+        // 出发城市code
+        SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+        depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+        configuration.addProperty(depCityCodeProperty);
+        // 抵达城市code
+        SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+        arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+        configuration.addProperty(arrCityCodeProperty);
+        // 数据
+        SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+        dataProperty.setPropertyMapper(Function.identity());
+        configuration.addProperty(dataProperty);
+        // 插入数据
+        Trie<FlightResourceDO> trie = new MapTrie<>(configuration);
+        for (FlightResourceDO flightResourceDO : dataList) {
+            trie.insert(flightResourceDO);
+        }
+
+        // 按照出发日期+出发地+抵达地查询
+        FlightResourceDO randomData = RandomUtil.randomEle(dataList);
+        Date depDate = randomData.getDepartureTime();
+        String depCityCode = randomData.getDepartureCity();
+        String arrCityCode = randomData.getArrivalCity();
+        List<FlightResourceDO> trieResult = trie.dataSearch(new Criteria() //
+            .addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE) //
+            .addCriterion(Condition.EQUAL, depCityCode, FlightTrieIndexNames.INDEX_DEP_CITY_CODE) //
+            .addCriterion(Condition.EQUAL, arrCityCode, FlightTrieIndexNames.INDEX_ARR_CITY_CODE) //
+        );
+        trieResult.sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+
+        List<FlightResourceDO> hashMapResult2 = hashMapCache2.get(DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN) + "&" + depCityCode + "&" + arrCityCode);
+        hashMapResult2
+            .sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+        TestCase.assertTrue(CollectionUtil.isEqualList(trieResult, hashMapResult2));
+
+        // 查询时间复杂度是一样的，同时解决了上面hashmap的几个问题，并且还有以下几个好处
+        // 1.trie上的日期是范围查询的（logn的查询复杂度），hashmap不能支持范围查询
+        // 2.trie中有字典的设计，可以复用，无论新增多少查询维度，数据字典都可以用同一个
+        // 3.如果希望根据日期直接查询到出发地+抵达地的组合，hashmap需要拿到原始数据再组装一下，而trie可以直接从索引上查询出来（不需要遍历原始数据处理，性能更高），代码如下
+        List<MyPair> dataPairResult = dataList.stream() //
+            .filter(e -> Objects.equals(DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN), DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN))) //
+            .map(e -> new MyPair(e.getDepartureCity(), e.getArrivalCity())) //
+            .distinct() //
+            .collect(Collectors.toList());
+        dataPairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+
+        Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE);
+        ResultBuilder<MyPair> resultBuilder = new ResultBuilder<>(MyPair::new);
+        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, MyPair::setKey);
+        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, MyPair::setVal);
+        List<MyPair> triePairResult = trie.listSearch(criteria, null, resultBuilder);
+        triePairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+
+        TestCase.assertTrue(CollectionUtil.isEqualList(triePairResult, dataPairResult));
+    }
+
+    @Test
+    public void testDictReUse() {
+        String dataSource = "flight_resource_5000.json";
+        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
+            System.out.println("flight_resource_5000.json not found！");
+            return;
+        }
+        List<FlightResourceDO> dataList = getFlightDataList(dataSource);
+
+        // 为什么将索引树和字典分离，是因为有时候想为一份数据建立多个索引，那么这多个索引是可以复用同一份字典数据的，可以节省空间
+        // 出发日期
+        CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+        depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
+        depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        // 出发城市code
+        SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+        depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+        // 抵达城市code
+        SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+        arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+        // 数据
+        SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+        dataProperty.setPropertyMapper(Function.identity());
+
+        // 假如第一个业务需要按照出发日期+出发城市+抵达城市+数据组织数据
+        Configuration configuration1 = new Configuration();
+        configuration1.addProperty(depDateProperty);
+        configuration1.addProperty(depCityCodeProperty);
+        configuration1.addProperty(arrCityCodeProperty);
+        configuration1.addProperty(dataProperty);
+        Trie<FlightResourceDO> trie1 = new MapTrie<>(configuration1);
+        for (FlightResourceDO flightResourceDO : dataList) {
+            trie1.insert(flightResourceDO);
+        }
+
+        // 第二个业务希望按照出发城市+出发日期+数据组织数据，这两个前缀树的字典是可以共享的（字典是Property的一个内部属性，公用Property就可以公用字典）
+        Configuration configuration2 = new Configuration();
+        configuration2.addProperty(depCityCodeProperty);
+        configuration2.addProperty(depDateProperty);
+        Trie<FlightResourceDO> trie2 = new MapTrie<>(configuration1);
+        for (FlightResourceDO flightResourceDO : dataList) {
+            trie2.insert(flightResourceDO);
+        }
+
+        for (int i = 0; i < 1000; i++) {
+            FlightResourceDO randomData = RandomUtil.randomEle(dataList);
+            Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, randomData.getDepartureTime(), FlightTrieIndexNames.INDEX_DEP_DATE);
+            TestCase.assertEquals(trie1.dataSearch(criteria).size(), trie2.dataSearch(criteria).size());
+        }
     }
 
     private List<FlightResourceDO> getFlightDataList(String dataSource) {
@@ -764,7 +921,7 @@ public class TrieTest {
         configuration.addProperty(arrCityCodeProperty);
 
         // 舱等类型
-        CustomizedProperty<FlightResourceDO, Integer> cabinClassProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_CABIN_TYPE);
+        CustomizedProperty<FlightResourceDO, Integer> cabinClassProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_CABIN_TYPE, NodeType.TREE_MAP);
         cabinClassProperty.setPropertyMapper(FlightResourceDO::getCabinType);
         cabinClassProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(cabinClassProperty);
@@ -901,12 +1058,6 @@ public class TrieTest {
         Runtime.getRuntime().runFinalization();
     }
 
-    private void clearDictData(Dict dict) {
-        for (Object dictKey : dict.dictAll().keySet()) {
-            dict.removeDictKey((Number) dictKey);
-        }
-    }
-
     private void printMemoryUse() {
         System.out.println("Memory Usages:");
         //当前JVM占用的内存总数(M)
@@ -921,4 +1072,13 @@ public class TrieTest {
         double used = (total - free);
         System.out.println("Used: " + ((Double) used).intValue() + "MB");
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    static class MyPair {
+        private String key;
+        private String val;
+    }
+
 }

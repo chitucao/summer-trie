@@ -73,7 +73,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 
 - 属性描述了选取数据实体的哪个字段作为一个树节点，并指定了这个字段值和字典key的映射关系；
 - 属性的类型目前有两种，一种是simpleProperty，适用于枚举类型，不需要比较和范围查询，另一种CustomProperty，可以手动指定和字典key的映射关系，映射成一个数字，可以支持范围和比较查询；
-- 注意simpleProperty是不能共享的，simpleProperty内部有一个局部变量（自增id），customProperty支持共享；
+- Property是支持复用的，Dict是Property的内部变量，所以共享了Property就相当于共享了字典；
 
 
 
@@ -349,6 +349,174 @@ List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Compar
   long id = 143859138L;
   TrainSourceDO eraseData = (TrainSourceDO) trie.dictValues("data", id).iterator().next();
   ```
+
+
+
+### 实现业务数据缓存
+
+- 项目启动时会缓存一些热点业务数据到内存，这些数据的特点是访问频繁但一般不做修改
+
+- 通常是基于一个hashmap来实现，如何设置key通常是按照业务要求来
+
+  - 比如第一个版本要求按照出发日期+出发地维度来缓存
+
+    ```java
+    List<FlightResourceDO> dataList = getFlightDataList(dataSource);
+    Map<String, List<FlightResourceDO>> hashMapCache1 = dataList.stream()
+        .collect(groupingBy(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity()));
+    ```
+
+  - 后续业务迭代了，还有个地方要求按照出发日期+出发地+抵达地维度来缓存，简单的办法就是再增加一个hashmap
+
+    ```
+    Map<String, List<FlightResourceDO>> hashMapCache2 = dataList.stream()
+        .collect(groupingBy(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+    ```
+
+- 这样使用hashmap来实现会带来以下几个问题
+
+  - 每次新增一个查询维度，都需要重新编写代码新建一个hashmap，需要重复编码；
+  - 每个hashmap的value存储的是同一份数据，数据重复了；
+  - 如果数据要做更新的话，两个map都要更新，可能引入数据一致性问题；
+
+- Trie可以解决上面的几个问题，下面是基于trie的实现
+
+  ```java
+  Configuration configuration = new Configuration();
+  // 出发日期
+  CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+  depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
+  depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+  configuration.addProperty(depDateProperty);
+  // 出发城市code
+  SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+  depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+  configuration.addProperty(depCityCodeProperty);
+  // 抵达城市code
+  SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+  arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+  configuration.addProperty(arrCityCodeProperty);
+  // 数据
+  SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+  dataProperty.setPropertyMapper(Function.identity());
+  configuration.addProperty(dataProperty);
+  // 插入数据
+  Trie<FlightResourceDO> trie = new MapTrie<>(configuration);
+  for (FlightResourceDO flightResourceDO : dataList) {
+      trie.insert(flightResourceDO);
+  }
+  ```
+
+- 具体的数据查询实现：
+
+  ```java
+  // 按照出发日期+出发地+抵达地查询
+  FlightResourceDO randomData = RandomUtil.randomEle(dataList);
+  Date depDate = randomData.getDepartureTime();
+  String depCityCode = randomData.getDepartureCity();
+  String arrCityCode = randomData.getArrivalCity();
+  List<FlightResourceDO> trieResult = trie.dataSearch(new Criteria() //
+      .addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE) //
+      .addCriterion(Condition.EQUAL, depCityCode, FlightTrieIndexNames.INDEX_DEP_CITY_CODE) //
+      .addCriterion(Condition.EQUAL, arrCityCode, FlightTrieIndexNames.INDEX_ARR_CITY_CODE) //
+  );
+  trieResult.sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+  List<FlightResourceDO> hashMapResult2 = hashMapCache2.get(DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN) + "&" + depCityCode + "&" + arrCityCode);
+  hashMapResult2
+      .sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+  TestCase.assertTrue(CollectionUtil.isEqualList(trieResult, hashMapResult2));
+  ```
+
+- trie实现的查询时间复杂度是一样的，同时解决了上面hashmap的几个问题
+
+  - 每次新增一个查询维度，只需要新增一个property就好，代码改动很小；
+  - 多个查询维度可以公用一份数据，不会带来重复的数据，也不会引入一致性问题；
+
+- 同时trie还支持额外的查询方式
+
+  - trie上的日期是范围查询的（logn的查询复杂度），hashmap只能做等值查询；
+
+  - 如果希望根据日期直接查询到出发地+抵达地的组合，hashmap需要拿到原始数据再组装一下，而trie可以直接从索引上查询出来（不需要遍历原始数据处理，性能更高），代码如下
+
+    ```java
+    // hashmap实现
+    List<MyPair> dataPairResult = dataList.stream() //
+        .filter(e -> Objects.equals(DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN), DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN))) //
+        .map(e -> new MyPair(e.getDepartureCity(), e.getArrivalCity())) //
+        .distinct() //
+        .collect(Collectors.toList());
+    dataPairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+    
+    // trie实现
+    Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE);
+    ResultBuilder<MyPair> resultBuilder = new ResultBuilder<>(MyPair::new);
+    resultBuilder.addSetter(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, MyPair::setKey);
+    resultBuilder.addSetter(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, MyPair::setVal);
+    List<MyPair> triePairResult = trie.listSearch(criteria, null, resultBuilder);
+    triePairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+    
+    TestCase.assertTrue(CollectionUtil.isEqualList(triePairResult, dataPairResult));
+    ```
+
+
+
+### 多索引情况下的字典复用
+
+- 为什么将索引树和字典分离，是因为有时候想为一份数据建立多个字典树索引，那么这多个索引如果能公用一份字典数据，是可以节省空间的；
+
+- 字典是Property的一个内部属性，公用Property就可以公用字典，字典是支持扩展的，可以作为一个构造参数传入Property；
+
+  - 定义几个复用的索引字段
+
+    ```java
+    // 出发日期
+    CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+    depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
+    depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+    // 出发城市code
+    SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+    depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+    // 抵达城市code
+    SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+    arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+    // 数据
+    SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+    ```
+
+  - 假如第一个业务需要按照出发日期+出发城市+抵达城市+数据组织数据
+
+    ```java
+    Configuration configuration1 = new Configuration();
+    configuration1.addProperty(depDateProperty);
+    configuration1.addProperty(depCityCodeProperty);
+    configuration1.addProperty(arrCityCodeProperty);
+    configuration1.addProperty(dataProperty);
+    Trie<FlightResourceDO> trie1 = new MapTrie<>(configuration1);
+    for (FlightResourceDO flightResourceDO : dataList) {
+        trie1.insert(flightResourceDO);
+    }
+    ```
+
+  - 第二个业务希望按照出发城市+出发日期+数据组织数据，那么可以使用同一份Property
+
+    ```java
+    Configuration configuration1 = new Configuration();
+    configuration1.addProperty(depDateProperty);
+    configuration1.addProperty(depCityCodeProperty);
+    configuration1.addProperty(arrCityCodeProperty);
+    configuration1.addProperty(dataProperty);
+    Trie<FlightResourceDO> trie1 = new MapTrie<>(configuration1);
+    for (FlightResourceDO flightResourceDO : dataList) {
+        trie1.insert(flightResourceDO);
+    }
+    
+    // 单元测试
+    for (int i = 0; i < 1000; i++) {
+        FlightResourceDO randomData = RandomUtil.randomEle(dataList);
+        Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, randomData.getDepartureTime(), FlightTrieIndexNames.INDEX_DEP_DATE);
+        TestCase.assertEquals(trie1.dataSearch(criteria).size(), trie2.dataSearch(criteria).size());
+    }
+    ```
 
 
 
