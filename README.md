@@ -500,14 +500,12 @@ List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Compar
   - 第二个业务希望按照出发城市+出发日期+数据组织数据，那么可以使用同一份Property
 
     ```java
-    Configuration configuration1 = new Configuration();
-    configuration1.addProperty(depDateProperty);
-    configuration1.addProperty(depCityCodeProperty);
-    configuration1.addProperty(arrCityCodeProperty);
-    configuration1.addProperty(dataProperty);
-    Trie<FlightResourceDO> trie1 = new MapTrie<>(configuration1);
+    Configuration configuration2 = new Configuration();
+    configuration2.addProperty(depCityCodeProperty);
+    configuration2.addProperty(depDateProperty);
+    Trie<FlightResourceDO> trie2 = new MapTrie<>(configuration1);
     for (FlightResourceDO flightResourceDO : dataList) {
-        trie1.insert(flightResourceDO);
+        trie2.insert(flightResourceDO);
     }
     
     // 单元测试
