@@ -62,6 +62,3 @@ gen_code
 node_modules
 
 ### custom ###
-.dat
-!/src/test/resources/train_resource_30w.json
-!/src/test/resources/flight_resource_60w.json
