@@ -1,7 +1,5 @@
 package top.chitucao.summerframework.trie.query;
 
-import lombok.Getter;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -13,7 +11,6 @@ import java.util.function.Supplier;
  *
  * @author chitucao
  */
-@Getter
 public class ResultBuilder<E> {
 
     /** 具体字段的setter方法 */
@@ -27,8 +24,18 @@ public class ResultBuilder<E> {
         this.supplier = supplier;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public <R> ResultBuilder<E> addSetter(String property, BiConsumer<E, R> setter) {
         setterMap.put(property, setter);
         return this;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Map<String, BiConsumer> getSetterMap() {
+        return setterMap;
+    }
+
+    public Supplier<E> getSupplier() {
+        return supplier;
     }
 }

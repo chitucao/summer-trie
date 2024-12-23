@@ -1,22 +1,19 @@
 package top.chitucao.summerframework.trie.query;
 
-import lombok.Data;
-
 /**
  * Criterion
  *
  * @author chitucao
  */
-@Data
 public class Criterion {
 
-    private String property;
+    private final String    property;
 
-    private Condition condition;
+    private final Condition condition;
 
-    private Object value;
+    private final Object    value;
 
-    private Object secondValue;
+    private final Object    secondValue;
 
     protected Criterion(Condition condition, Object value, String property) {
         this(condition, value, null, property);
@@ -29,4 +26,24 @@ public class Criterion {
         this.secondValue = secondValue;
     }
 
+    public String getProperty() {
+        return property;
+    }
+
+    public Condition getCondition() {
+        return condition;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public Object getSecondValue() {
+        return secondValue;
+    }
+
+    @Override
+    public String toString() {
+        return "Criterion{" + "property='" + property + '\'' + ", condition=" + condition + ", value=" + value + ", secondValue=" + secondValue + '}';
+    }
 }

@@ -2,8 +2,6 @@ package top.chitucao.summerframework.trie.configuration.property;
 
 import java.util.function.Function;
 
-import lombok.Getter;
-import lombok.Setter;
 import top.chitucao.summerframework.trie.dict.Dict;
 import top.chitucao.summerframework.trie.dict.HashMapDict;
 import top.chitucao.summerframework.trie.node.NodeType;
@@ -22,14 +20,12 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     protected int            level;
 
     /** 节点类型 */
-    @Getter
     protected final NodeType nodeType;
 
     /** 字段字典 */
     protected final Dict<R>  dict;
 
     /** 指定实体和字段值的映射关系 */
-    @Setter
     private Function<T, R>   propertyMapper;
 
     public AbstractProperty(String name) {
@@ -84,5 +80,9 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     @Override
     public Dict<R> dict() {
         return dict;
+    }
+
+    public void setPropertyMapper(Function<T, R> propertyMapper) {
+        this.propertyMapper = propertyMapper;
     }
 }

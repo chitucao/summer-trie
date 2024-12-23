@@ -1,7 +1,6 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
 import top.chitucao.summerframework.trie.node.NodeType;
-import lombok.Getter;
 
 /**
  * 简单节点属性
@@ -11,7 +10,6 @@ import lombok.Getter;
  *
  * @author chitucao
  */
-@Getter
 public class SimpleProperty<T, R> extends AbstractProperty<T, R> {
 
     protected NumberAdder dictKeyAdder;
@@ -47,5 +45,9 @@ public class SimpleProperty<T, R> extends AbstractProperty<T, R> {
     @Override
     public Number getDictKey(R r) {
         return dict.getDictKey(r);
+    }
+
+    public NumberAdder getDictKeyAdder() {
+        return dictKeyAdder;
     }
 }

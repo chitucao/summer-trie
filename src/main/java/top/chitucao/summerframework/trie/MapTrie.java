@@ -8,13 +8,8 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.lang.Pair;
 import top.chitucao.summerframework.trie.codec.MapTrieProtoBuf;
 import top.chitucao.summerframework.trie.configuration.Configuration;
 import top.chitucao.summerframework.trie.configuration.property.Property;
@@ -25,6 +20,7 @@ import top.chitucao.summerframework.trie.nodemanager.DefaultNodeManagerFactory;
 import top.chitucao.summerframework.trie.nodemanager.NodeManager;
 import top.chitucao.summerframework.trie.nodemanager.NodeManagerFactory;
 import top.chitucao.summerframework.trie.query.*;
+import top.chitucao.summerframework.trie.utils.Pair;
 
 /**
  * 映射实现的字典树
@@ -355,7 +351,7 @@ public class MapTrie<T> implements Trie<T> {
             return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
         } else {
             // 3.2 还有后续字段过滤条件，判断任意子节点是否满足后续过滤条件
-            Set<Number> keys = Sets.newHashSet();
+            Set<Number> keys = new HashSet<>();
             NodeManager<T, ?> next = iterator.next();
             curChildMap.forEach(map -> map.forEach((k, v) -> {
                 if (!keys.contains(k) && childrenAnyMatch(v, next, criteriaMap, aggregationMap, maxCriteriaLevel)) {
@@ -404,7 +400,7 @@ public class MapTrie<T> implements Trie<T> {
         resultBuilderCheck(resultBuilder);
         List<List<Number>> dataList = multiLevelSearch(criteria, aggregations, resultBuilder.getSetterMap().keySet().toArray(new String[0]));
         if (dataList.isEmpty()) {
-            return Lists.newArrayList();
+            return new ArrayList<>();
         }
         List<E> result = new ArrayList<>();
         @SuppressWarnings("rawtypes")
@@ -440,7 +436,7 @@ public class MapTrie<T> implements Trie<T> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object treeSearch(Criteria criteria, Aggregations aggregations, String... properties) {
         if (properties == null || properties.length == 0) {
-            return Lists.newArrayList();
+            return new ArrayList<>();
         }
 
         if (properties.length == 1) {
@@ -449,12 +445,12 @@ public class MapTrie<T> implements Trie<T> {
 
         List<List<Number>> dataList = multiLevelSearch(criteria, aggregations, properties);
         if (dataList.isEmpty()) {
-            return Maps.newHashMap();
+            return new HashMap<>();
         }
 
         List<NodeManager> propertyNodeManagerList = getPropertyNodeManagerList(properties);
 
-        Map result = Maps.newHashMap();
+        Map result = new HashMap<>();
         for (List<Number> fields : dataList) {
             Object cur = result;
             for (int i = 0; i < properties.length; i++) {
@@ -464,9 +460,9 @@ public class MapTrie<T> implements Trie<T> {
                     Map map = (Map) cur;
                     if (!map.containsKey(dictValue)) {
                         if (i == properties.length - 2) {
-                            map.put(dictValue, Lists.newArrayList());
+                            map.put(dictValue, new ArrayList<>());
                         } else {
-                            map.put(dictValue, Maps.newHashMap());
+                            map.put(dictValue, new HashMap<>());
                         }
                     }
                     cur = map.get(dictValue);
@@ -491,7 +487,7 @@ public class MapTrie<T> implements Trie<T> {
      */
     private List<List<Number>> multiLevelSearch(Criteria criteria, Aggregations aggregations, String... properties) {
         if (properties == null || properties.length == 0) {
-            return Lists.newArrayList();
+            return new ArrayList<>();
         }
         propertiesCheck(properties);
         sortProperties(properties);
@@ -510,9 +506,9 @@ public class MapTrie<T> implements Trie<T> {
         int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
         int maxPropertyLevel = this.getMaxPropertyLevel(properties);
 
-        List<List<Number>> result = Lists.newArrayList();
-        dfsSearch(this.root, headNodeManager(), criteria.getCriterionMap(), maxCriteriaLevel, Sets.newHashSet(properties), maxPropertyLevel, aggregations.getAggregationMap(),
-            result, Lists.newArrayList());
+        List<List<Number>> result = new ArrayList<>();
+        dfsSearch(this.root, headNodeManager(), criteria.getCriterionMap(), maxCriteriaLevel, new HashSet<>(Arrays.asList(properties)), maxPropertyLevel,
+            aggregations.getAggregationMap(), result, new ArrayList<>());
 
         return result;
     }
@@ -542,7 +538,7 @@ public class MapTrie<T> implements Trie<T> {
         Map<Number, Node> map = nodeManager.searchAndAgg(cur, criterion, aggregation);
         boolean isResultProperty = propertySet.contains(propertyName);
         for (Map.Entry<Number, Node> entry : map.entrySet()) {
-            List<Number> newPath = Lists.newArrayList(path);
+            List<Number> newPath = new ArrayList<>(path);
             if (isResultProperty) {
                 newPath.add(entry.getKey());
             }
@@ -581,7 +577,7 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public Map<String, Integer> dictSizes() {
-        Map<String, Integer> result = Maps.newHashMap();
+        Map<String, Integer> result = new HashMap<>();
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             result.put(nodeManager.property().name(), nodeManager.property().dict().getSize());
         }
@@ -671,7 +667,7 @@ public class MapTrie<T> implements Trie<T> {
         MapTrieProtoBuf.Trie trie;
         try {
             trie = MapTrieProtoBuf.Trie.parseFrom(bytes);
-        } catch (InvalidProtocolBufferException | IORuntimeException e) {
+        } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException(e);
         }
         List<Pair<Function<Number, Number>, Function<String, Object>>> dictMapperList = getDictMapperList(trie.getDictList());
@@ -819,7 +815,7 @@ public class MapTrie<T> implements Trie<T> {
      */
     @SuppressWarnings("rawtypes")
     private <E> List<Pair<NodeManager, BiConsumer>> getPropertySetterList(ResultBuilder<E> resultBuilder) {
-        List<Pair<NodeManager, BiConsumer>> propertySetterList = Lists.newArrayList();
+        List<Pair<NodeManager, BiConsumer>> propertySetterList = new ArrayList<>();
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             String propertyName = nodeManager.property().name();
             if (resultBuilder.getSetterMap().containsKey(propertyName)) {
@@ -837,8 +833,9 @@ public class MapTrie<T> implements Trie<T> {
      */
     @SuppressWarnings("rawtypes")
     private List<NodeManager> getPropertyNodeManagerList(String... properties) {
-        HashSet<String> propertySet = Sets.newHashSet(properties);
-        List<NodeManager> propertyNodeManagerList = Lists.newArrayList();
+        HashSet<String> propertySet = new HashSet<>(Arrays.asList(properties));
+
+        List<NodeManager> propertyNodeManagerList = new ArrayList<>();
         for (NodeManager<T, ?> nodeManager : nodeManagers) {
             String propertyName = nodeManager.property().name();
             if (propertySet.contains(propertyName)) {

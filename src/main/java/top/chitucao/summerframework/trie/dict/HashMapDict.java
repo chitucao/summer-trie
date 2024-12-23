@@ -5,8 +5,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import lombok.Setter;
-
 /**
  * 基于两个HashMap的字典实现
  *
@@ -21,7 +19,6 @@ public class HashMapDict<R> implements Dict<R> {
     protected Map<Number, Integer> counter;
 
     /** 在字典值数量为0的时候是否删除该字典，如果是定时重建，并且快速删除，则没必要开启这个选项，开启了可以稍微节省点空间 */
-    @Setter
     protected boolean              removeDictIfNonCount;
 
     public HashMapDict() {
@@ -100,5 +97,9 @@ public class HashMapDict<R> implements Dict<R> {
         indexer.remove(dict.get(dictKey));
         dict.remove(dictKey);
         counter.remove(dictKey);
+    }
+
+    public void setRemoveDictIfNonCount(boolean removeDictIfNonCount) {
+        this.removeDictIfNonCount = removeDictIfNonCount;
     }
 }

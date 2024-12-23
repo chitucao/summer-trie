@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
@@ -25,9 +24,6 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.json.JSONUtil;
 import junit.framework.TestCase;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import top.chitucao.summerframework.trie.configuration.Configuration;
 import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
 import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
@@ -41,6 +37,7 @@ import top.chitucao.summerframework.trie.train.TrainSourceDO;
 import top.chitucao.summerframework.trie.train.TrainSourceResult;
 import top.chitucao.summerframework.trie.train.TrainSourceResultAgg;
 import top.chitucao.summerframework.trie.train.TrainTrieIndexNames;
+import top.chitucao.summerframework.trie.utils.Pair;
 
 /**
  * TrieTest
@@ -182,7 +179,7 @@ public class TrieTest {
             trie.insert(data);
         }
 
-        List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
+        List<Integer> queryDepCityList = Arrays.asList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
             .collect(Collectors.toList());
 
@@ -202,7 +199,7 @@ public class TrieTest {
             trie.insert(data);
         }
 
-        List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
+        List<Integer> queryDepCityList = Arrays.asList(144, 145, 146, 900);
         List<Integer> indexList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalCityId).distinct().sorted()
             .collect(Collectors.toList());
 
@@ -222,7 +219,7 @@ public class TrieTest {
             trie.insert(data);
         }
 
-        List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
+        List<Integer> queryDepCityList = Arrays.asList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
             .collect(Collectors.toList());
 
@@ -295,14 +292,14 @@ public class TrieTest {
             trie.insert(data);
         }
 
-        List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
+        List<Integer> queryDepCityList = Arrays.asList(144, 145, 146, 900);
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
             .collect(Collectors.toList());
         Map<Integer, Map<Integer, Map<Long, List<TrainSourceDO>>>> depCityMap1 = dataList1.stream()
             .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
 
         Map<Integer, Map<Integer, List<Long>>> depCityMap0 = dataList1.stream()
-            .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> Lists.newArrayList(e.getId()), (a, b) -> {
+            .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> new ArrayList<>(Collections.singletonList(e.getId())), (a, b) -> {
                 a.addAll(b);
                 return a;
             })));
@@ -348,7 +345,7 @@ public class TrieTest {
             trie.insert(data);
         }
 
-        List<Integer> queryDepCityList = Lists.newArrayList(144, 145, 146, 900);
+        List<Integer> queryDepCityList = Arrays.asList(144, 145, 146, 900);
         List<Integer> dataList1 = dataList.stream().filter(e -> !queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalDistrictId).distinct().sorted()
             .collect(Collectors.toList());
 
@@ -755,19 +752,19 @@ public class TrieTest {
         // 1.trie上的日期是范围查询的（logn的查询复杂度），hashmap不能支持范围查询
         // 2.trie中有字典的设计，可以复用，无论新增多少查询维度，数据字典都可以用同一个
         // 3.如果希望根据日期直接查询到出发地+抵达地的组合，hashmap需要拿到原始数据再组装一下，而trie可以直接从索引上查询出来（不需要遍历原始数据处理，性能更高），代码如下
-        List<MyPair> dataPairResult = dataList.stream() //
+        List<Pair> dataPairResult = dataList.stream() //
             .filter(e -> Objects.equals(DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN), DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN))) //
-            .map(e -> new MyPair(e.getDepartureCity(), e.getArrivalCity())) //
+            .map(e -> new Pair<>(e.getDepartureCity(), e.getArrivalCity())) //
             .distinct() //
             .collect(Collectors.toList());
-        dataPairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+        dataPairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getValue()));
 
         Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE);
-        ResultBuilder<MyPair> resultBuilder = new ResultBuilder<>(MyPair::new);
-        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, MyPair::setKey);
-        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, MyPair::setVal);
-        List<MyPair> triePairResult = trie.listSearch(criteria, null, resultBuilder);
-        triePairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getVal()));
+        ResultBuilder<Pair> resultBuilder = new ResultBuilder<>(Pair::new);
+        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, Pair::setKey);
+        resultBuilder.addSetter(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, Pair::setValue);
+        List<Pair> triePairResult = trie.listSearch(criteria, null, resultBuilder);
+        triePairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getValue()));
 
         TestCase.assertTrue(CollectionUtil.isEqualList(triePairResult, dataPairResult));
     }
@@ -1071,14 +1068,6 @@ public class TrieTest {
         //已经使用内存(M)
         double used = (total - free);
         System.out.println("Used: " + ((Double) used).intValue() + "MB");
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    static class MyPair {
-        private String key;
-        private String val;
     }
 
 }

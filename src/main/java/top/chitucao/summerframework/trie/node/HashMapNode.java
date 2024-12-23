@@ -7,16 +7,11 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.google.common.collect.Maps;
-
-import lombok.Getter;
-
 /**
  * HashMapNode
  *
  * @author chitucao
  */
-@Getter
 public class HashMapNode implements Node {
 
     private HashMap<Number, Node> child;
@@ -94,7 +89,7 @@ public class HashMapNode implements Node {
 
     @Override
     public Map<Number, Node> eq(Number key) {
-        Map<Number, Node> result = Maps.newHashMap();
+        Map<Number, Node> result = new HashMap<>();
         if (Objects.isNull(key)) {
             return result;
         }
@@ -107,9 +102,9 @@ public class HashMapNode implements Node {
 
     @Override
     public Map<Number, Node> between(Number left, Number right) {
-        Map<Number, Node> result = Maps.newHashMap();
+        Map<Number, Node> result = new HashMap<>();
         if (Objects.isNull(left) && Objects.isNull(right)) {
-            return Maps.newHashMap(child);
+            return new HashMap<>(child);
         }
         if (Objects.nonNull(left) && Objects.nonNull(right)) {
             if (left.longValue() > right.longValue()) {
@@ -138,7 +133,7 @@ public class HashMapNode implements Node {
 
     @Override
     public Map<Number, Node> in(Set<Number> keys) {
-        Map<Number, Node> result = Maps.newHashMap();
+        Map<Number, Node> result = new HashMap<>();
         keys.forEach(k -> {
             Node v = child.get(k);
             if (Objects.nonNull(v)) {
@@ -150,7 +145,7 @@ public class HashMapNode implements Node {
 
     @Override
     public Map<Number, Node> notIn(Set<Number> keys) {
-        Map<Number, Node> result = Maps.newHashMap();
+        Map<Number, Node> result = new HashMap<>();
         child.forEach((k, v) -> {
             if (!keys.contains(k)) {
                 result.put(k, v);

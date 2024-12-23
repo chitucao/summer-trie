@@ -20,6 +20,7 @@
         1.0.2.RELEASE 字典支持删除
         1.0.3.RELEASE 序列化方法优化
         1.0.4.RELEASE 代码优化
+        1.0.5.RELEASE 项目依赖优化，支持零依赖
     </description>
 
     <developers>
@@ -60,55 +61,47 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.18.12</lombok.version>
+        <!--序列化功能相关的包，可选依赖-->
         <jackson.version>2.17.2</jackson.version>
-        <hutool.version>5.8.32</hutool.version>
-        <apache-commons.version>3.17.0</apache-commons.version>
-        <guava.version>33.3.0-jre</guava.version>
         <protobuf.version>3.25.5</protobuf.version>
+        <!--单元测试相关的包-->
+        <hutool.version>5.8.32</hutool.version>
         <junit.version>4.13.2</junit.version>
     </properties>
 
     <dependencies>
+        <!--序列化相关的包（可选的，如果不使用序列化功能可以不引入）-->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+            <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${apache-commons.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
+
+        <!--测试相关的包-->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
             <version>${hutool.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

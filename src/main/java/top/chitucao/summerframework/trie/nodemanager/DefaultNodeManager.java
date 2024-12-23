@@ -5,8 +5,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.Getter;
-import lombok.Setter;
 import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.HashMapNode;
 import top.chitucao.summerframework.trie.node.Node;
@@ -19,11 +17,8 @@ import top.chitucao.summerframework.trie.query.Criterion;
  *
  * @author chitucao
  */
-@Getter
-@Setter
 public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
 
-    @Setter
     protected NodeManager<T, R> prev, next;
 
     protected Property<T, R>    property;
@@ -261,5 +256,21 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
         for (Number k : search(cur, criterion).keySet()) {
             cur.childMap().remove(k);
         }
+    }
+
+    public void setPrev(NodeManager<T, R> prev) {
+        this.prev = prev;
+    }
+
+    public void setNext(NodeManager<T, R> next) {
+        this.next = next;
+    }
+
+    public Property<T, R> getProperty() {
+        return property;
+    }
+
+    public void setProperty(Property<T, R> property) {
+        this.property = property;
     }
 }

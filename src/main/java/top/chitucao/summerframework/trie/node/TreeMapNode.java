@@ -7,14 +7,11 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import lombok.Getter;
-
 /**
  * TreeMapNode
  *
  * @author chitucao
  */
-@Getter
 public class TreeMapNode implements Node {
 
     private TreeMap<Number, Node> child;

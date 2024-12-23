@@ -1,11 +1,9 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
+import java.util.function.Function;
+
 import top.chitucao.summerframework.trie.dict.Dict;
 import top.chitucao.summerframework.trie.node.NodeType;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.function.Function;
 
 /**
  * 自定义节点属性
@@ -15,8 +13,6 @@ import java.util.function.Function;
  *
  * @author chitucao
  */
-@Getter
-@Setter
 public class CustomizedProperty<T, R> extends AbstractProperty<T, R> {
 
     /** 指定如何将字段值映射成字典key */
@@ -46,5 +42,9 @@ public class CustomizedProperty<T, R> extends AbstractProperty<T, R> {
     @Override
     public Number getDictKey(R r) {
         return dictKeyMapper.apply(r);
+    }
+
+    public void setDictKeyMapper(Function<R, Number> dictKeyMapper) {
+        this.dictKeyMapper = dictKeyMapper;
     }
 }

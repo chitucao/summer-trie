@@ -35,6 +35,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 - 支持简单的聚合查询（可以扩展），例如MIN，MAX，时间复杂度可以达到O(logn)；
 - 树节点不存储实际字段值，而是由一个全局的字典维护字段值，树节点存储的是字段对应的字典索引，可以压缩数据，提高查询性能；
 - 支持Protobuf序列化和反序列化，适用于通信和数据dump分析;
+- 如果不适用序列化相关的功能，可以零依赖；
 
 
 
@@ -94,7 +95,7 @@ gitee 	  https://gitee.com/chitucao/summer-trie.git
 <dependency>
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.0.4.RELEASE</version>
+    <version>1.0.5.RELEASE</version>
 </dependency>
 ```
 

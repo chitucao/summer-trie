@@ -1,7 +1,5 @@
 package top.chitucao.summerframework.trie.query;
 
-import lombok.Getter;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +10,6 @@ import java.util.Map;
  */
 public class Aggregations {
 
-    @Getter
     protected Map<String, Aggregation> aggregationMap;
 
     public Aggregations() {
@@ -24,4 +21,7 @@ public class Aggregations {
         return this;
     }
 
+    public Map<String, Aggregation> getAggregationMap() {
+        return aggregationMap;
+    }
 }

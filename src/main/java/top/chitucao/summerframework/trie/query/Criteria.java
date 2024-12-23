@@ -1,7 +1,5 @@
 package top.chitucao.summerframework.trie.query;
 
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +13,6 @@ import java.util.stream.Collectors;
  */
 public class Criteria {
 
-    @Getter
     protected List<Criterion> criterionList;
 
     public Criteria() {
@@ -34,5 +31,9 @@ public class Criteria {
 
     public Map<String, Criterion> getCriterionMap() {
         return criterionList.stream().collect(Collectors.toMap(Criterion::getProperty, Function.identity()));
+    }
+
+    public List<Criterion> getCriterionList() {
+        return criterionList;
     }
 }
