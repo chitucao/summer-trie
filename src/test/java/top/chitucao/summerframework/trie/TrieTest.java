@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 
@@ -32,7 +33,10 @@ import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
 import top.chitucao.summerframework.trie.flight.FlightResourceDO;
 import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
 import top.chitucao.summerframework.trie.node.NodeType;
-import top.chitucao.summerframework.trie.query.*;
+import top.chitucao.summerframework.trie.query.Aggregation;
+import top.chitucao.summerframework.trie.query.Aggregations;
+import top.chitucao.summerframework.trie.query.Criteria;
+import top.chitucao.summerframework.trie.query.ResultBuilder;
 import top.chitucao.summerframework.trie.train.TrainSourceDO;
 import top.chitucao.summerframework.trie.train.TrainSourceResult;
 import top.chitucao.summerframework.trie.train.TrainSourceResultAgg;
@@ -140,8 +144,8 @@ public class TrieTest {
         //        int queryCount = trie.dataSearch(criteria).size();
         //        int count = trie.erase(criteria);
 
-        long eraseCount = dataList.stream().filter(e -> e.getDepartureCityId() >= 0 && e.getDepartureCityId() <= 1005).count();
-        Criteria criteria = new Criteria().addCriterion(Condition.BETWEEN, 0, 1005, "depCityId");
+        long eraseCount = dataList.stream().filter(e -> e.getDepartureCityId() >= 0 && e.getDepartureCityId() <= 1005 && Objects.equals(e.getTrainType(), "KS")).count();
+        Criteria criteria = Criteria.where("depCityId").between(0, 1005).and("trainType").eq("KS");
         int queryCount = trie.dataSearch(criteria).size();
         int count = trie.erase(criteria);
 
@@ -160,7 +164,7 @@ public class TrieTest {
 
         TrainSourceDO dataToInsert = RandomUtil.randomEle(dataList);
 
-        Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, dataToInsert.getDepartureCityId(), "depCityId");
+        Criteria criteria = Criteria.where("depCityId").eq(dataToInsert.getDepartureCityId());
 
         TestCase.assertFalse(trie.contains(criteria));
         TestCase.assertFalse(trie.contains(dataToInsert));
@@ -183,8 +187,8 @@ public class TrieTest {
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
             .collect(Collectors.toList());
 
-        Criteria criteria = new Criteria();
-        criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
+        Criteria criteria = Criteria.where("depCityId").in(queryDepCityList);
+
         List<TrainSourceDO> dataList2 = trie.dataSearch(criteria).stream().sorted(Comparator.comparing(TrainSourceDO::getId)).collect(Collectors.toList());
 
         TestCase.assertTrue(CollectionUtil.isEqualList(dataList1, dataList2));
@@ -203,8 +207,8 @@ public class TrieTest {
         List<Integer> indexList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalCityId).distinct().sorted()
             .collect(Collectors.toList());
 
-        Criteria criteria = new Criteria();
-        criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
+        Criteria criteria = Criteria.where("depCityId").in(queryDepCityList);
+
         List<Integer> indexList2 = trie.<Integer> propertySearch(criteria, "arrCityId").stream().sorted().collect(Collectors.toList());
 
         TestCase.assertTrue(CollectionUtil.isEqualList(indexList1, indexList2));
@@ -223,8 +227,7 @@ public class TrieTest {
         List<TrainSourceDO> dataList1 = dataList.stream().filter(e -> queryDepCityList.contains(e.getDepartureCityId())).sorted(Comparator.comparing(TrainSourceDO::getId))
             .collect(Collectors.toList());
 
-        Criteria criteria = new Criteria();
-        criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
+        Criteria criteria = Criteria.where("depCityId").in(queryDepCityList);
 
         Aggregations aggregations = new Aggregations();
 
@@ -271,7 +274,7 @@ public class TrieTest {
         resultBuilder.addSetter("depCityId", TrainSourceResultAgg::setDepCityId);
         resultBuilder.addSetter("arrCityId", TrainSourceResultAgg::setArrCityId);
 
-        List<TrainSourceResultAgg> dataList1 = trie.listSearch(new Criteria(), new Aggregations().addAggregation(Aggregation.MIN, "price"), resultBuilder);
+        List<TrainSourceResultAgg> dataList1 = trie.listSearch(null, new Aggregations().addAggregation(Aggregation.MIN, "price"), resultBuilder);
         HashMap<String, Integer> aggMap2 = new HashMap<>();
         for (TrainSourceResultAgg data : dataList1) {
             aggMap2.put(data.getDepCityId() + "&" + data.getArrCityId(), data.getMinPrice());
@@ -298,14 +301,13 @@ public class TrieTest {
         Map<Integer, Map<Integer, Map<Long, List<TrainSourceDO>>>> depCityMap1 = dataList1.stream()
             .collect(groupingBy(TrainSourceDO::getDepartureCityId, groupingBy(TrainSourceDO::getArrivalCityId, groupingBy(TrainSourceDO::getId))));
 
-        Map<Integer, Map<Integer, List<Long>>> depCityMap0 = dataList1.stream()
-            .collect(groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> new ArrayList<>(Collections.singletonList(e.getId())), (a, b) -> {
+        Map<Integer, Map<Integer, List<Long>>> depCityMap0 = dataList1.stream().collect(
+            groupingBy(TrainSourceDO::getDepartureCityId, Collectors.toMap(TrainSourceDO::getArrivalCityId, e -> new ArrayList<>(Collections.singletonList(e.getId())), (a, b) -> {
                 a.addAll(b);
                 return a;
             })));
 
-        Criteria criteria = new Criteria();
-        criteria.addCriterion(Condition.IN, queryDepCityList, "depCityId");
+        Criteria criteria = Criteria.where("depCityId").in(queryDepCityList);
 
         Aggregations aggregations = new Aggregations();
 
@@ -349,8 +351,7 @@ public class TrieTest {
         List<Integer> dataList1 = dataList.stream().filter(e -> !queryDepCityList.contains(e.getDepartureCityId())).map(TrainSourceDO::getArrivalDistrictId).distinct().sorted()
             .collect(Collectors.toList());
 
-        Criteria criteria = new Criteria();
-        criteria.addCriterion(Condition.NOT_IN, queryDepCityList, "depCityId");
+        Criteria criteria = Criteria.where("arrCityId").nin(queryDepCityList);
 
         Aggregations aggregations = new Aggregations();
         List<Integer> dataList2 = ((List<Integer>) trie.treeSearch(criteria, aggregations, "arrDistrictId")).stream().sorted().collect(Collectors.toList());
@@ -449,7 +450,7 @@ public class TrieTest {
 
         MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
         trie2.deserialize(FileUtil.readBytes(dumpFile));
-        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(new Criteria(), new Aggregations(), buildResultBuilder());
+        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(null, new Aggregations(), buildResultBuilder());
 
         dataList.sort(Comparator.comparing(TrainSourceDO::getId));
         dataList2.sort(Comparator.comparing(TrainSourceDO::getId));
@@ -463,6 +464,42 @@ public class TrieTest {
         Map<String, Integer> dictSizes2 = trie2.dictSizes();
 
         TestCase.assertTrue(dictSizes1.values().containsAll(dictSizes2.values()) && dictSizes2.values().containsAll(dictSizes1.values()));
+    }
+
+    @Test
+    public void testMultiConditionSearch() {
+        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+        Configuration configuration = buildConfiguration1();
+        MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
+        for (TrainSourceDO data : dataList) {
+            trie.insert(data);
+        }
+        TestCase.assertEquals(3000, trie.getSize());
+
+        Set<Integer> notInDepartureCityIdList = IntStream.range(0, 100).boxed().collect(Collectors.toSet());
+
+        List<String> inDepartureStationCodeList = Arrays.asList("SDG", "SAH", "RZH", "RYH");
+
+        List<TrainSourceDO> result1 = dataList.stream() //
+            .filter(e -> e.getDepartureCityId() >= 0 && e.getDepartureCityId() <= 1005) //
+            .filter(e -> e.getDepartureCityId() != 391)//
+            .filter(e -> !notInDepartureCityIdList.contains(e.getDepartureCityId())) //
+            .filter(e -> e.getTrainType().equals("KS")) //
+            .filter(e -> Double.valueOf(e.getMinRealPrice()).intValue() <= 200) //
+            .filter(e -> Double.valueOf(e.getMinRealPrice()).intValue() > 100) //
+            .filter(e -> inDepartureStationCodeList.contains(e.getDepartureStationCode())) //
+            .collect(Collectors.toList());
+
+        Criteria criteria = Criteria.where("depCityId").between(0, 1005) //
+            .and("depCityId").nin(notInDepartureCityIdList) //
+            .and("depCityId").ne(391)//
+            .and("trainType").eq("KS") //
+            .and("minRealPrice").lte(200) //
+            .and("minRealPrice").gt(100) //
+            .and("departureStationCode").in(inDepartureStationCodeList); //
+        List<TrainSourceDO> result2 = trie.dataSearch(criteria);
+
+        TestCase.assertEquals(result1.size(), result2.size());
     }
 
     @Test
@@ -736,10 +773,11 @@ public class TrieTest {
         Date depDate = randomData.getDepartureTime();
         String depCityCode = randomData.getDepartureCity();
         String arrCityCode = randomData.getArrivalCity();
-        List<FlightResourceDO> trieResult = trie.dataSearch(new Criteria() //
-            .addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE) //
-            .addCriterion(Condition.EQUAL, depCityCode, FlightTrieIndexNames.INDEX_DEP_CITY_CODE) //
-            .addCriterion(Condition.EQUAL, arrCityCode, FlightTrieIndexNames.INDEX_ARR_CITY_CODE) //
+        List<FlightResourceDO> trieResult = trie.dataSearch( //
+            Criteria.where(FlightTrieIndexNames.INDEX_DEP_DATE).eq(depDate)//
+                .and(FlightTrieIndexNames.INDEX_DEP_CITY_CODE).eq(depCityCode)//
+                .and(FlightTrieIndexNames.INDEX_ARR_CITY_CODE).eq(arrCityCode)
+
         );
         trieResult.sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
 
@@ -759,7 +797,8 @@ public class TrieTest {
             .collect(Collectors.toList());
         dataPairResult.sort(Comparator.comparing(e -> e.getKey() + "&" + e.getValue()));
 
-        Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, depDate, FlightTrieIndexNames.INDEX_DEP_DATE);
+        Criteria criteria = Criteria.where(FlightTrieIndexNames.INDEX_DEP_DATE).eq(depDate);
+
         ResultBuilder<Pair> resultBuilder = new ResultBuilder<>(Pair::new);
         resultBuilder.addSetter(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, Pair::setKey);
         resultBuilder.addSetter(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, Pair::setValue);
@@ -815,7 +854,7 @@ public class TrieTest {
 
         for (int i = 0; i < 1000; i++) {
             FlightResourceDO randomData = RandomUtil.randomEle(dataList);
-            Criteria criteria = new Criteria().addCriterion(Condition.EQUAL, randomData.getDepartureTime(), FlightTrieIndexNames.INDEX_DEP_DATE);
+            Criteria criteria = Criteria.where(FlightTrieIndexNames.INDEX_DEP_DATE).eq(randomData.getDepartureTime());
             TestCase.assertEquals(trie1.dataSearch(criteria).size(), trie2.dataSearch(criteria).size());
         }
     }
@@ -987,6 +1026,11 @@ public class TrieTest {
         depDistrictIdProperty.setDictKeyMapper(r -> r);
         configuration.addProperty(depDistrictIdProperty);
 
+        // 出发站点
+        SimpleProperty<TrainSourceDO, String> departureStationCodeProperty = new SimpleProperty<>("departureStationCode", DictKeyType.INT);
+        departureStationCodeProperty.setPropertyMapper(TrainSourceDO::getDepartureStationCode);
+        configuration.addProperty(departureStationCodeProperty);
+
         // 抵达城市
         CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId", NodeType.TREE_MAP);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
@@ -1008,6 +1052,12 @@ public class TrieTest {
         SimpleProperty<TrainSourceDO, String> seatClassProperty = new SimpleProperty<>("seatClass", DictKeyType.BYTE);
         seatClassProperty.setPropertyMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
+
+        // 最低票价
+        CustomizedProperty<TrainSourceDO, Integer> minRealPriceProperty = new CustomizedProperty<>("minRealPrice", NodeType.TREE_MAP);
+        minRealPriceProperty.setPropertyMapper(e -> Double.valueOf(e.getMinRealPrice()).intValue());
+        minRealPriceProperty.setDictKeyMapper(r -> r);
+        configuration.addProperty(minRealPriceProperty);
 
         // id
         CustomizedProperty<TrainSourceDO, Long> idProperty = new CustomizedProperty<>("id", NodeType.TREE_MAP);

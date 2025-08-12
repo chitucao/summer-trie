@@ -106,10 +106,7 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public int erase(Criteria criteria) {
-        if (Objects.isNull(criteria) || criteria.getCriterionList().isEmpty()) {
-            return 0;
-        }
-        criteriaCheck(criteria);
+        criteriaNotNullCheck(criteria);
         if (configuration.isUseFastErase()) {
             fastErase(criteria);
             return -1;
@@ -125,20 +122,20 @@ public class MapTrie<T> implements Trie<T> {
      * @param criteria  删除条件
      */
     private int normErase(Criteria criteria) {
-        return Math.abs(doNormErase(root, headNodeManager(), criteria.getCriterionMap()));
+        return Math.abs(doNormErase(root, headNodeManager(), criteria.getAllCriterion()));
     }
 
     /**
     * 普通删除
     
     * @param cur 当前节点
-    * @param nodeManager 当前节点管理器
-    * @param criteriaMap 查询条件
+    * @param nodeManager    当前节点管理器
+    * @param criterionMap   查询条件
     * @return   当前节点删除的数据总量，绝对值表示删除数量，负数表示子节点完全删除
     */
-    private int doNormErase(Node cur, NodeManager<T, ?> nodeManager, Map<String, Criterion> criteriaMap) {
+    private int doNormErase(Node cur, NodeManager<T, ?> nodeManager, Map<String, Criterion> criterionMap) {
         String propertyName = nodeManager.property().name();
-        Criterion criterion = criteriaMap.get(propertyName);
+        Criterion criterion = criterionMap.get(propertyName);
 
         // 走到这里说明到最后一层了，可以向上删除了
         // 最后一层可以直接删除字典key，因为都是唯一的
@@ -166,7 +163,7 @@ public class MapTrie<T> implements Trie<T> {
         Iterator<Map.Entry<Number, Node>> iterator = childMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Number, Node> entry = iterator.next();
-            int removeCount = doNormErase(entry.getValue(), nodeManager.next(), criteriaMap);
+            int removeCount = doNormErase(entry.getValue(), nodeManager.next(), criterionMap);
             if (removeCount >= 0) {
                 allChildRemoved = false;
             } else {
@@ -186,17 +183,17 @@ public class MapTrie<T> implements Trie<T> {
      * @param criteria 删除条件
      */
     private void fastErase(Criteria criteria) {
-        Map<String, Criterion> criteriaMap = criteria.getCriterionMap();
-        int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
+        Map<String, Criterion> criterionMap = criteria.getAllCriterion();
+        int maxCriteriaLevel = getMaxCriteriaLevel(criterionMap);
         Iterator<NodeManager<T, ?>> iterator = nodeManagers.iterator();
 
         Stream<Node> cur = Stream.of(root);
         for (int i = 0; i < maxCriteriaLevel; i++) {
             NodeManager<T, ?> nodeManager = iterator.next();
-            cur = cur.flatMap(e -> nodeManager.search(e, criteriaMap.get(nodeManager.property().name())).values().stream());
+            cur = cur.flatMap(e -> nodeManager.search(e, criterionMap.get(nodeManager.property().name())).values().stream());
         }
         NodeManager<T, ?> lastNodemanager = iterator.next();
-        cur.forEach(e -> lastNodemanager.remove(e, criteriaMap.get(lastNodemanager.property().name())));
+        cur.forEach(e -> lastNodemanager.remove(e, criterionMap.get(lastNodemanager.property().name())));
     }
 
     /**
@@ -253,14 +250,11 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public boolean contains(Criteria criteria) {
-        criteriaCheck(criteria);
-        sortCriteria(criteria);
-        if (criteria.getCriterionList().isEmpty()) {
-            return root.getSize() != 0;
-        }
+        criteriaNotNullCheck(criteria);
+        Map<String, Criterion> criterion = criteria.getAllCriterion();
 
-        int maxCriteriaLevel = getMaxCriteriaLevel(criteria);
-        return !this.levelSearch(criteria, new Aggregations(), maxCriteriaLevel).isEmpty();
+        int maxCriteriaLevel = getMaxCriteriaLevel(criteria.getAllCriterion());
+        return !this.levelSearch(criterion, new Aggregations(), maxCriteriaLevel).isEmpty();
     }
 
     /**
@@ -295,9 +289,9 @@ public class MapTrie<T> implements Trie<T> {
             // 如果叶子节点没有存储数据，则不支持这个方法
             throw new IllegalStateException("Leaf node is not a data node, Data search is not supported");
         }
-        criteriaCheck(criteria);
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
         //noinspection unchecked
-        return (List<T>) tailNodeManager().mappingDictValues(levelSearch(criteria, new Aggregations(), tailNodeManager().property().level())).collect(Collectors.toList());
+        return (List<T>) tailNodeManager().mappingDictValues(levelSearch(criterionMap, new Aggregations(), tailNodeManager().property().level())).collect(Collectors.toList());
     }
 
     /**
@@ -310,10 +304,10 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public <R> List<R> propertySearch(Criteria criteria, String property) {
-        criteriaCheck(criteria);
         propertyCheck(property);
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
         //noinspection unchecked
-        return (List<R>) nodeManagerNameMap.get(property).mappingDictValues(levelSearch(criteria, new Aggregations(), nodeManagerNameMap.get(property).property().level()))
+        return (List<R>) nodeManagerNameMap.get(property).mappingDictValues(levelSearch(criterionMap, new Aggregations(), nodeManagerNameMap.get(property).property().level()))
             .collect(Collectors.toList());
     }
 
@@ -321,31 +315,30 @@ public class MapTrie<T> implements Trie<T> {
      * 查询某一层的数据
      * 尽量使用遍历操作代替递归操作，提交查询效率
      *
-     * @param criteria     查询条件
-     * @param aggregations 聚合条件
-     * @param level        展示字段层级
+     * @param criterionMap      查询条件
+     * @param aggregations      聚合条件
+     * @param level             展示字段层级
      * @return 展示层级的字典key
      */
-    private Set<Number> levelSearch(Criteria criteria, Aggregations aggregations, int level) {
+    private Set<Number> levelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, int level) {
         Iterator<NodeManager<T, ?>> iterator = nodeManagers.iterator();
-        Map<String, Criterion> criteriaMap = criteria.getCriterionMap();
         Map<String, Aggregation> aggregationMap = aggregations.getAggregationMap();
         // 1.查询到展示字段前
         Stream<Node> cur = Stream.of(root);
         for (int i = 0; i < level; i++) {
             NodeManager<T, ?> nodeManager = iterator.next();
             String propertyName = nodeManager.property().name();
-            cur = cur.flatMap(e -> nodeManager.searchAndAgg(e, criteriaMap.get(propertyName), aggregationMap.get(propertyName)).values().stream());
+            cur = cur.flatMap(e -> nodeManager.searchAndAgg(e, criterionMap.get(propertyName), aggregationMap.get(propertyName)).values().stream());
         }
 
         // 2.查询展示字段
         NodeManager<T, ?> levelManager = iterator.next();
         String levelPropertyName = levelManager.property().name();
-        Stream<Map<Number, Node>> curChildMap = cur.map(node -> levelManager.searchAndAgg(node, criteriaMap.get(levelPropertyName), aggregationMap.get(levelPropertyName)))
+        Stream<Map<Number, Node>> curChildMap = cur.map(node -> levelManager.searchAndAgg(node, criterionMap.get(levelPropertyName), aggregationMap.get(levelPropertyName)))
             .filter(e -> !e.isEmpty());
 
         // 3.判断是否还有展示字段后续字段的过滤条件
-        int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
+        int maxCriteriaLevel = this.getMaxCriteriaLevel(criterionMap);
         if (levelManager.property().level() >= maxCriteriaLevel) {
             // 3.1 没有后续字段过滤条件，可以返回了
             return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
@@ -354,7 +347,7 @@ public class MapTrie<T> implements Trie<T> {
             Set<Number> keys = new HashSet<>();
             NodeManager<T, ?> next = iterator.next();
             curChildMap.forEach(map -> map.forEach((k, v) -> {
-                if (!keys.contains(k) && childrenAnyMatch(v, next, criteriaMap, aggregationMap, maxCriteriaLevel)) {
+                if (!keys.contains(k) && childrenAnyMatch(v, next, criterionMap, aggregationMap, maxCriteriaLevel)) {
                     keys.add(k);
                 }
             }));
@@ -375,7 +368,7 @@ public class MapTrie<T> implements Trie<T> {
     private boolean childrenAnyMatch(Node node, NodeManager<T, ?> nodeManager, Map<String, Criterion> criteriaMap, Map<String, Aggregation> aggregationMap, int maxCriteriaLevel) {
         String propertyName = nodeManager.property().name();
         Criterion criterion = criteriaMap.get(propertyName);
-        // 返回条件，走到最后一个查询条件
+        // 终止条件，走到最后一个查询条件
         if (nodeManager.property().level() == maxCriteriaLevel) {
             return nodeManager.contains(node, criterion);
         }
@@ -398,7 +391,9 @@ public class MapTrie<T> implements Trie<T> {
     @Override
     public <E> List<E> listSearch(Criteria criteria, Aggregations aggregations, ResultBuilder<E> resultBuilder) {
         resultBuilderCheck(resultBuilder);
-        List<List<Number>> dataList = multiLevelSearch(criteria, aggregations, resultBuilder.getSetterMap().keySet().toArray(new String[0]));
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
+
+        List<List<Number>> dataList = multiLevelSearch(criterionMap, aggregations, resultBuilder.getSetterMap().keySet().toArray(new String[0]));
         if (dataList.isEmpty()) {
             return new ArrayList<>();
         }
@@ -443,7 +438,8 @@ public class MapTrie<T> implements Trie<T> {
             return propertySearch(criteria, properties[0]);
         }
 
-        List<List<Number>> dataList = multiLevelSearch(criteria, aggregations, properties);
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
+        List<List<Number>> dataList = multiLevelSearch(criterionMap, aggregations, properties);
         if (dataList.isEmpty()) {
             return new HashMap<>();
         }
@@ -480,35 +476,29 @@ public class MapTrie<T> implements Trie<T> {
      * 多层列表查询
      * 这里返回的是树节点数据
      *
-     * @param criteria     查询条件
-     * @param aggregations 聚合条件
-     * @param properties   要展示的字段列表
+     * @param criterionMap      查询条件
+     * @param aggregations      聚合条件
+     * @param properties        要展示的字段列表
      * @return 平铺的列表数据
      */
-    private List<List<Number>> multiLevelSearch(Criteria criteria, Aggregations aggregations, String... properties) {
+    private List<List<Number>> multiLevelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, String... properties) {
         if (properties == null || properties.length == 0) {
             return new ArrayList<>();
         }
         propertiesCheck(properties);
         sortProperties(properties);
 
-        if (Objects.isNull(criteria)) {
-            criteria = new Criteria();
-        }
-        criteriaCheck(criteria);
-        sortCriteria(criteria);
-
         if (Objects.isNull(aggregations)) {
             aggregations = new Aggregations();
         }
         aggregationCheck(aggregations);
 
-        int maxCriteriaLevel = this.getMaxCriteriaLevel(criteria);
+        int maxCriteriaLevel = this.getMaxCriteriaLevel(criterionMap);
         int maxPropertyLevel = this.getMaxPropertyLevel(properties);
 
         List<List<Number>> result = new ArrayList<>();
-        dfsSearch(this.root, headNodeManager(), criteria.getCriterionMap(), maxCriteriaLevel, new HashSet<>(Arrays.asList(properties)), maxPropertyLevel,
-            aggregations.getAggregationMap(), result, new ArrayList<>());
+        dfsSearch(this.root, headNodeManager(), criterionMap, maxCriteriaLevel, new HashSet<>(Arrays.asList(properties)), maxPropertyLevel, aggregations.getAggregationMap(),
+            result, new ArrayList<>());
 
         return result;
     }
@@ -777,6 +767,16 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
+     * 获取查询条件
+     * 
+     * @param criteria  条件
+     * @return          所有查询条件
+     */
+    private static Map<String, Criterion> getCriterionMap(Criteria criteria) {
+        return Objects.isNull(criteria) ? new HashMap<>() : criteria.getAllCriterion();
+    }
+
+    /**
      * 获取查询字段的最大深度
      *
      * @param properties 查询字段列表
@@ -789,21 +789,22 @@ public class MapTrie<T> implements Trie<T> {
     /**
      * 获取查询条件的最大深度
      *
-     * @param criteria 查询条件
+     * @param criterionMap 查询条件
      * @return 查询条件的最大深度
      */
-    private int getMaxCriteriaLevel(Criteria criteria) {
-        List<Criterion> criterionList = criteria.getCriterionList();
-        return criterionList.isEmpty() ? -1 : nodeManagerNameMap.get(criterionList.get(criterionList.size() - 1).getProperty()).property().level();
-    }
-
-    /**
-     * 查询条件排序
-     *
-     * @param criteria 查询条件
-     */
-    private void sortCriteria(Criteria criteria) {
-        criteria.getCriterionList().sort(Comparator.comparing(e -> nodeManagerNameMap.get(e.getProperty()).property().level()));
+    private int getMaxCriteriaLevel(Map<String, Criterion> criterionMap) {
+        if (criterionMap.isEmpty()) {
+            return -1;
+        }
+        Set<String> keys = criterionMap.keySet();
+        NodeManager<T, ?> tNodeManager = tailNodeManager();
+        while (tNodeManager != null) {
+            if (keys.contains(tNodeManager.property().name())) {
+                return tNodeManager.property().level();
+            }
+            tNodeManager = tNodeManager.prev();
+        }
+        return -1;
     }
 
     /**
@@ -921,23 +922,13 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
-     * 查询条件校验
+     * 查询条件非空校验
      *
      * @param criteria 查询条件
      */
-    private void criteriaCheck(Criteria criteria) {
-        List<Criterion> criterionList = criteria.getCriterionList();
-        if (criterionList.isEmpty()) {
-            return;
-        }
-        Set<String> propertySet = new HashSet<>();
-        for (Criterion criterion : criterionList) {
-            if (!nodeManagerNameMap.containsKey(criterion.getProperty())) {
-                throw new IllegalArgumentException(propertyNotDefinedMsg(criterion.getProperty()));
-            }
-            if (!propertySet.add(criterion.getProperty())) {
-                throw new IllegalArgumentException("Duplicate property: " + criterion.getProperty() + " in criteria");
-            }
+    private void criteriaNotNullCheck(Criteria criteria) {
+        if (Objects.isNull(criteria)) {
+            throw new IllegalArgumentException("Criteria can not be null");
         }
     }
 

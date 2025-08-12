@@ -9,6 +9,7 @@ import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.HashMapNode;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.TreeMapNode;
+import top.chitucao.summerframework.trie.operation.OperationRegistry;
 import top.chitucao.summerframework.trie.query.Aggregation;
 import top.chitucao.summerframework.trie.query.Criterion;
 
@@ -162,76 +163,31 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
 
     @Override
     public Map<Number, Node> search(Node cur, Criterion criterion) {
+        Map<Number, Node> result = cur.childMap();
         if (Objects.isNull(criterion)) {
-            return cur.childMap();
+            return result;
         }
-        switch (criterion.getCondition()) {
-            case EQUAL:
-                //noinspection unchecked
-                return cur.eq(property.getDictKey((R) criterion.getValue()));
-            case BETWEEN:
-                //noinspection unchecked
-                return cur.between(property.getDictKey((R) criterion.getValue()), property.getDictKey((R) criterion.getSecondValue()));
-            case GTE:
-                //noinspection unchecked
-                return cur.between(property.getDictKey((R) criterion.getValue()), null);
-            case LTE:
-                //noinspection unchecked
-                return cur.between(null, property.getDictKey((R) criterion.getValue()));
-            case IN:
-                //noinspection unchecked
-                List<R> inValues = (List<R>) criterion.getValue();
-                if (Objects.isNull(inValues) || inValues.isEmpty()) {
-                    return cur.childMap();
-                }
-                return cur.in((inValues.stream().map(property::getDictKey).collect(Collectors.toSet())));
-            case NOT_IN:
-                //noinspection unchecked
-                List<R> notInValues = (List<R>) criterion.getValue();
-                if (Objects.isNull(notInValues) || notInValues.isEmpty()) {
-                    return cur.childMap();
-                }
-                return cur.notIn((notInValues.stream().map(property::getDictKey).collect(Collectors.toSet())));
-            default:
-                return cur.childMap();
+        OperationRegistry operationRegistry = OperationRegistry.getInstance();
+        for (Map.Entry<String, Object> entry : criterion.getCriterion().entrySet()) {
+            result = operationRegistry.getOperate(property.nodeType().name(), entry.getKey()).query(result, mapperDictKey(entry.getValue()));
         }
+        return result;
     }
 
     @Override
     public boolean contains(Node cur, Criterion criterion) {
+        Map<Number, Node> childMap = cur.childMap();
         if (Objects.isNull(criterion)) {
             return true;
         }
-        switch (criterion.getCondition()) {
-            case EQUAL:
-                //noinspection unchecked
-                return cur.containsEq(property.getDictKey((R) criterion.getValue()));
-            case BETWEEN:
-                //noinspection unchecked
-                return cur.containsBetween(property.getDictKey((R) criterion.getValue()), property.getDictKey((R) criterion.getSecondValue()));
-            case GTE:
-                //noinspection unchecked
-                return cur.containsBetween(property.getDictKey((R) criterion.getValue()), null);
-            case LTE:
-                //noinspection unchecked
-                return cur.containsBetween(null, property.getDictKey((R) criterion.getValue()));
-            case IN:
-                //noinspection unchecked
-                List<R> inValues = (List<R>) criterion.getValue();
-                if (Objects.isNull(inValues) || inValues.isEmpty()) {
-                    return cur.getSize() > 0;
-                }
-                return cur.containsIn((inValues.stream().map(property::getDictKey).collect(Collectors.toSet())));
-            case NOT_IN:
-                //noinspection unchecked
-                List<R> notInValues = (List<R>) criterion.getValue();
-                if (Objects.isNull(notInValues) || notInValues.isEmpty()) {
-                    return cur.getSize() > 0;
-                }
-                return cur.containsNotIn(notInValues.stream().map(property::getDictKey).collect(Collectors.toSet()));
-            default:
-                return true;
+        OperationRegistry operationRegistry = OperationRegistry.getInstance();
+        for (Map.Entry<String, Object> entry : criterion.getCriterion().entrySet()) {
+            childMap = operationRegistry.getOperate(property.nodeType().name(), entry.getKey()).query(childMap, mapperDictKey(entry.getValue()));
+            if (childMap.isEmpty()) {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
@@ -272,5 +228,21 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
 
     public void setProperty(Property<T, R> property) {
         this.property = property;
+    }
+
+    private Object mapperDictKey(Object value) {
+        if (Objects.isNull(value)) {
+            return value;
+        }
+        if (value instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<R> values = (Collection<R>) value;
+            if (values.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return values.stream().map(property::getDictKey).collect(Collectors.toList());
+        }
+        //noinspection unchecked
+        return property.getDictKey((R) value);
     }
 }
