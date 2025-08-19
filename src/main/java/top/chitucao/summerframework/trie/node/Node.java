@@ -5,66 +5,69 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * 节点
+ * trie节点
+ * @param <K>   节点值类型
  *
  * @author chitucao
  */
-public interface Node {
+public interface Node<K> {
+
+    /**
+     * 子节点映射表
+     *
+     * @return  子节点映射表
+     */
+    Map<K, Node<K>> children();
+
+    /**
+     * 设置子节点映射表
+     *
+     * @param children  子节点映射表
+     */
+    void setChildren(Map<K, Node<K>> children);
+
     /**
      * 子节点数量
      * 
      * @return  子节点数量
      */
-    int getSize();
+    int childSize();
 
     /**
-     * 所有子节点映射
-     * 
-     * @return  所有子节点映射
-     */
-    Map<Number, Node> childMap();
-
-    /**
-    * 所有字典key
+    * 子节点key集合
     *
-    * @return  所有字典key
+    * @return  子节点key集合
     */
-    Set<Number> keys();
+    Set<K> childKeySet();
+
+    /**
+     * 子节点
+     *
+     * @return  子节点key
+     */
+    Node<K> child(K key);
 
     /**
     * 添加子节点
-    * 
-    * @return  添加子节点
+     *
+    * @param key        子节点key
+    * @param child      子节点
     */
-    Node addChild(Number key, Node child);
+    Node<K> putChild(K key, Node<K> child);
 
     /**
     * 添加子节点
-    * 延迟了子节点的创建，因为有些情况下并不需要创建子节点，没必要提前创建
-    * 
+     *
+    * @param key                   子节点key
+    * @param childSupplier         子节点提供者
     * @return  添加子节点
     */
-    Node addChild(Number key, Supplier<Node> childSupplier);
+    Node<K> putChild(K key, Supplier<Node<K>> childSupplier);
 
     /**
-    * 设置子节点
-    * 
-    * @param childMap  子节点映射
-    */
-    void setChild(Map<Number, Node> childMap);
-
-    /**
-    * 根据字典key获取
-    * 
-    * @return  字典key
-    */
-    Node getChild(Number key);
-
-    /**
-     * 根据字典key删除子节点
-     * 
+     * 删除子节点
+     *
      * @param key   字典key
      */
-    void removeChild(Number key);
-
+    <K> void removeChild(K key);
 }

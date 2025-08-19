@@ -1,90 +1,45 @@
 package top.chitucao.summerframework.trie.node;
 
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * TreeMapNode
+ * 红黑树实现的trie节点
  *
  * @author chitucao
  */
-public class TreeMapNode implements Node {
-
-    private TreeMap<Number, Node> child;
+public class TreeMapNode<K> extends AbstractMapNode<K> {
 
     public TreeMapNode() {
         //noinspection SortedCollectionWithNonComparableKeys
-        this.child = new TreeMap<>();
+        children = new TreeMap<>();
     }
 
-    public TreeMapNode(Map<Number, Node> child) {
-        this.child = new TreeMap<>(child);
-    }
-
-    public TreeMapNode(Stream<Number> keys) {
+    public TreeMapNode(Stream<K> keys) {
         //noinspection SortedCollectionWithNonComparableKeys
-        this.child = new TreeMap<>();
+        children = new TreeMap<>();
         keys.forEach(key -> {
-            child.put(key, EmptyNodeHolder.EMPTY_NODE);
+            //noinspection unchecked
+            children.put(key, EmptyNodeHolder.EMPTY_NODE);
         });
     }
 
+    /**
+     * 设置子节点映射表
+     *
+     * @param children  子节点映射表
+     */
     @Override
-    public int getSize() {
-        return child.size();
+    public void setChildren(Map<K, Node<K>> children) {
+        this.children = new TreeMap<>(children);
     }
 
-    @Override
-    public Node addChild(Number key, Node childNode) {
-        Node exChildNode = child.get(key);
-        if (Objects.nonNull(exChildNode)) {
-            return exChildNode;
-        }
-        child.put(key, childNode);
-        return childNode;
-    }
-
-    @Override
-    public Node addChild(Number key, Supplier<Node> childSupplier) {
-        Node exChildNode = child.get(key);
-        if (Objects.nonNull(exChildNode)) {
-            return exChildNode;
-        }
-        Node childNode = childSupplier.get();
-        child.put(key, childNode);
-        return childNode;
-    }
-
-    @Override
-    public Set<Number> keys() {
-        return child.keySet();
-    }
-
-    @Override
-    public Map<Number, Node> childMap() {
-        return child;
-    }
-
-    @Override
-    public Node getChild(Number key) {
-        return child.get(key);
-    }
-
-    @Override
-    public void setChild(Map<Number, Node> childMap) {
-        this.child = new TreeMap<>(childMap);
-    }
-
-    @Override
-    public void removeChild(Number key) {
-        child.remove(key);
-    }
-
+    /**
+     * 单例实现的空节点
+     */
     public static class EmptyNodeHolder {
+        @SuppressWarnings("rawtypes")
         public static final TreeMapNode EMPTY_NODE = new TreeMapNode();
     }
 }

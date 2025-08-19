@@ -7,13 +7,13 @@ import java.util.LinkedList;
  *
  * @author chitucao
  */
-public interface NodeManagerFactory<T> {
+public interface NodeManagerFactory {
 
     /**
      * 创建所有节点管理器
      * 
      * @return  所有节点管理器
      */
-    LinkedList<NodeManager<T, ?>> createNodeManagers();
+    LinkedList<NodeManager> createNodeManagers();
 
 }

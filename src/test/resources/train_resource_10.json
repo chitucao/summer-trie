@@ -1,0 +1,37 @@
+[
+ {
+  "id" : 143857312,
+  "departureCityId" : 146,
+  "departureCityLevel" : 0,
+  "departureDistrictId" : 3300,
+  "arrivalCityId" : 163,
+  "arrivalCityLevel" : 0,
+  "arrivalDistrictId" : 4028,
+  "departureStationCode" : "SJP",
+  "arrivalStationCode" : "ZZF",
+  "trainType" : "KS",
+  "seatClass" : "W",
+  "minRealPrice" : 62.5,
+  "maxRealPrice" : 62.5,
+  "minRunTime" : 269,
+  "maxRunTime" : 411,
+  "createDate" : 1723046400000
+},{
+  "id" : 143857323,
+  "departureCityId" : 146,
+  "departureCityLevel" : 0,
+  "departureDistrictId" : 3300,
+  "arrivalCityId" : 163,
+  "arrivalCityLevel" : 0,
+  "arrivalDistrictId" : 4028,
+  "departureStationCode" : "SJP",
+  "arrivalStationCode" : "ZZF",
+  "trainType" : "GD",
+  "seatClass" : "O",
+  "minRealPrice" : 195,
+  "maxRealPrice" : 215,
+  "minRunTime" : 127,
+  "maxRunTime" : 139,
+  "createDate" : 1723046400000
+}
+]

@@ -2,13 +2,14 @@ package top.chitucao.summerframework.trie.nodemanager;
 
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.HashMapNode;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.TreeMapNode;
+import top.chitucao.summerframework.trie.operation.Func;
+import top.chitucao.summerframework.trie.operation.Operation;
 import top.chitucao.summerframework.trie.operation.OperationRegistry;
 import top.chitucao.summerframework.trie.query.Aggregation;
 import top.chitucao.summerframework.trie.query.Criterion;
@@ -18,142 +19,165 @@ import top.chitucao.summerframework.trie.query.Criterion;
  *
  * @author chitucao
  */
-public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
+public class DefaultNodeManager implements NodeManager {
 
-    protected NodeManager<T, R> prev, next;
+    protected NodeManager       prev, next;
 
-    protected Property<T, R>    property;
+    protected Property<?, ?, ?> property;
 
-    public DefaultNodeManager(Property<T, R> property) {
+    public DefaultNodeManager(Property<?, ?, ?> property) {
         this.property = property;
     }
 
     @Override
-    public NodeManager<T, R> prev() {
+    public NodeManager prev() {
         return this.prev;
     }
 
     @Override
-    public NodeManager<T, R> next() {
+    public NodeManager next() {
         return this.next;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Property<T, R> property() {
+    public Property<?, ?, ?> property() {
         return this.property;
     }
 
     @Override
-    public Node createNewNode() {
+    public <K> Node<K> createNewNode() {
         //noinspection SwitchStatementWithTooFewBranches
         switch (property.nodeType()) {
             case TREE_MAP:
-                return new TreeMapNode();
+                return new TreeMapNode<>();
             default:
-                return new HashMapNode();
+                return new HashMapNode<>();
         }
     }
 
     @Override
-    public Node createEmptyValueNode(Stream<Number> keys) {
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (property.nodeType()) {
-            case TREE_MAP:
-                return new TreeMapNode(keys);
-            default:
-                return new HashMapNode(keys);
-        }
+    public <R, K> Stream<R> mappingDictValues(Set<K> dictKeys) {
+        //noinspection unchecked
+        return dictKeys.stream().map(dictKey -> ((Property<?, R, K>) property).nodeKey2FieldValue(dictKey));
     }
 
     @Override
-    public Stream<R> mappingDictValues(Set<Number> dictKeys) {
-        return dictKeys.stream().map(dictKey -> property.dict().getDictValue(dictKey));
+    public <T, R, K> K mappingDictKey(T t) {
+        //noinspection unchecked
+        Property<T, R, K> property1 = (Property<T, R, K>) property;
+        return property1.mappingNodeKey(property1.mappingFieldValue(t));
     }
 
     @Override
-    public Number mappingDictKey(T t) {
-        return property.dict().getDictKey(property.mappingValue(t));
-    }
-
-    @Override
-    public Node addChildNode(Node parent, T t) {
-        R val = property.mappingValue(t);
+    public <T, R, K> Node<K> addChildNode(Node<K> parent, T t) {
+        @SuppressWarnings("unchecked")
+        Property<T, R, K> property1 = (Property<T, R, K>) property;
+        R val = property1.mappingFieldValue(t);
         if (val == null) {
-            throw new IllegalArgumentException("Cannot add child node with null value. Property: " + property.name() + "Data: " + t.toString());
+            throw new IllegalArgumentException("Cannot add child node with null value. Property: " + property1.name() + "Data: " + t.toString());
         }
-        Supplier<Node> childSupplier = next() == null ? this::createNewNode : () -> next.createNewNode();
-        Number dictKey = property.mappingDictKey(val);
-        property.dict().putDict(dictKey, val);
-        return parent.addChild(dictKey, childSupplier);
+        Supplier<Node<K>> childSupplier = next() == null ? this::createNewNode : () -> next.createNewNode();
+        K dictKey = property1.mappingOrCreateNodeKey(val);
+        // 字典属性节点，需要加入树节点和字段值的映射关系
+        if (property1.isDictProperty()) {
+            property1.getDict().put(dictKey, val);
+        }
+        return parent.putChild(dictKey, childSupplier);
     }
 
     @Override
-    public void removeChildNode(Node parent, T t) {
-        R val = property.mappingValue(t);
-        if (Objects.isNull(val) || !property.dict().containsDictValue(val)) {
+    public <T, R, K> void removeChildNode(Node<K> parent, T t) {
+        @SuppressWarnings("unchecked")
+        Property<T, R, K> property1 = (Property<T, R, K>) property;
+        R val = property1.mappingFieldValue(t);
+        if (Objects.isNull(val)) {
             return;
         }
-        parent.removeChild(property.getDictKey(val));
+        parent.removeChild(property1.mappingNodeKey(val));
+    }
+
+    /**
+     * 删除子节点
+     *
+     * @param parent  父节点
+     * @param dictKey 字典key
+     */
+    @Override
+    public <K> void removeChild(Node<K> parent, K dictKey) {
+        parent.removeChild(dictKey);
+        if (property.isDictProperty()) {
+            //noinspection unchecked
+            ((Property<?, ?, K>) property).getDict().removeNodeKey(dictKey);
+        }
     }
 
     @Override
-    public Node findChildNode(Node parent, T t) {
-        R val = property.mappingValue(t);
-        if (Objects.isNull(val) || !property.dict().containsDictValue(val)) {
+    public <T, R, K> Node<K> findChildNode(Node<K> parent, T t) {
+        @SuppressWarnings("unchecked")
+        Property<T, R, K> property1 = (Property<T, R, K>) property;
+        R val = property1.mappingFieldValue(t);
+        if (Objects.isNull(val)) {
             return null;
         }
-        return parent.getChild(property.getDictKey(val));
+        return parent.child(property1.mappingNodeKey(val));
     }
 
     @Override
-    public Map<Number, Node> searchAndAgg(Node cur, Criterion criterion, Aggregation aggregation) {
+    public <K> Map<K, Node<K>> searchAndAgg(Node<K> cur, Criterion criterion, Aggregation aggregation) {
         if (Objects.isNull(criterion) && Objects.isNull(aggregation)) {
-            return cur.childMap();
+            return cur.children();
         }
         if (Objects.isNull(aggregation)) {
             return search(cur, criterion);
         }
-        Map<Number, Node> childMap = search(cur, criterion);
-        if (childMap.isEmpty()) {
+        Map<K, Node<K>> childMap = search(cur, criterion);
+        if (childMap.isEmpty() || childMap.size() == 1) {
             return childMap;
         }
         //noinspection SwitchStatementWithTooFewBranches
         switch (property.nodeType()) {
             case TREE_MAP:
                 //noinspection SortedCollectionWithNonComparableKeys
-                TreeMap<Number, Node> treeMapResult = new TreeMap<>();
+                TreeMap<K, Node<K>> treeMapResult = new TreeMap<>();
                 switch (aggregation) {
                     case MIN:
-                        Map.Entry<Number, Node> minEntry = ((TreeMap<Number, Node>) childMap).firstEntry();
+                        Map.Entry<K, Node<K>> minEntry = ((TreeMap<K, Node<K>>) childMap).firstEntry();
                         treeMapResult.put(minEntry.getKey(), minEntry.getValue());
                         return treeMapResult;
                     case MAX:
-                        Map.Entry<Number, Node> maxEntry = ((TreeMap<Number, Node>) childMap).lastEntry();
+                        Map.Entry<K, Node<K>> maxEntry = ((TreeMap<K, Node<K>>) childMap).lastEntry();
                         treeMapResult.put(maxEntry.getKey(), maxEntry.getValue());
                         return treeMapResult;
                     default:
                         return childMap;
                 }
             default:
-                HashMap<Number, Node> hashMapResult = new HashMap<>();
+                HashMap<K, Node<K>> hashMapResult = new HashMap<>();
                 switch (aggregation) {
                     case MIN:
-                        Number minDictKey = Long.MAX_VALUE;
-                        for (Number dictKey : childMap.keySet()) {
-                            if (dictKey.longValue() < minDictKey.longValue()) {
-                                minDictKey = dictKey;
+                        Map.Entry<K, Node<K>> minEntry = null;
+                        for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
+                            //noinspection unchecked,rawtypes
+                            if (minEntry == null || ((Comparable) entry.getKey()).compareTo(minEntry.getKey()) < 0) {
+                                minEntry = entry;
                             }
                         }
-                        hashMapResult.put(minDictKey, childMap.get(minDictKey));
+                        if (Objects.nonNull(minEntry)) {
+                            hashMapResult.put(minEntry.getKey(), minEntry.getValue());
+                        }
                         return hashMapResult;
                     case MAX:
-                        Number maxDictKey = Long.MIN_VALUE;
-                        for (Number dictKey : childMap.keySet()) {
-                            if (dictKey.longValue() > maxDictKey.longValue()) {
-                                maxDictKey = dictKey;
+                        Map.Entry<K, Node<K>> maxEntry = null;
+                        for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
+                            //noinspection unchecked,rawtypes
+                            if (maxEntry == null || ((Comparable) entry.getKey()).compareTo(maxEntry.getKey()) > 0) {
+                                maxEntry = entry;
                             }
                         }
-                        hashMapResult.put(maxDictKey, childMap.get(maxDictKey));
+                        if (Objects.nonNull(maxEntry)) {
+                            hashMapResult.put(maxEntry.getKey(), maxEntry.getValue());
+                        }
                         return hashMapResult;
                     default:
                         return childMap;
@@ -162,27 +186,25 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
     }
 
     @Override
-    public Map<Number, Node> search(Node cur, Criterion criterion) {
-        Map<Number, Node> result = cur.childMap();
+    public <K> Map<K, Node<K>> search(Node<K> cur, Criterion criterion) {
+        Map<K, Node<K>> result = cur.children();
         if (Objects.isNull(criterion)) {
             return result;
         }
-        OperationRegistry operationRegistry = OperationRegistry.getInstance();
         for (Map.Entry<String, Object> entry : criterion.getCriterion().entrySet()) {
-            result = operationRegistry.getOperate(property.nodeType().name(), entry.getKey()).query(result, mapperDictKey(entry.getValue()));
+            result = operate(result, entry);
         }
         return result;
     }
 
     @Override
-    public boolean contains(Node cur, Criterion criterion) {
-        Map<Number, Node> childMap = cur.childMap();
+    public <K> boolean contains(Node<K> cur, Criterion criterion) {
+        Map<K, Node<K>> childMap = cur.children();
         if (Objects.isNull(criterion)) {
             return true;
         }
-        OperationRegistry operationRegistry = OperationRegistry.getInstance();
         for (Map.Entry<String, Object> entry : criterion.getCriterion().entrySet()) {
-            childMap = operationRegistry.getOperate(property.nodeType().name(), entry.getKey()).query(childMap, mapperDictKey(entry.getValue()));
+            childMap = operate(childMap, entry);
             if (childMap.isEmpty()) {
                 return false;
             }
@@ -191,11 +213,11 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
     }
 
     @Override
-    public void slice(Node cur, Criterion criterion) {
+    public <K> void slice(Node<K> cur, Criterion criterion) {
         if (Objects.isNull(criterion)) {
             return;
         }
-        cur.setChild(search(cur, criterion));
+        cur.setChildren(search(cur, criterion));
     }
 
     /**
@@ -205,44 +227,43 @@ public class DefaultNodeManager<T, R> implements NodeManager<T, R> {
      * @param criterion 条件
      */
     @Override
-    public void remove(Node cur, Criterion criterion) {
+    public <K> void remove(Node<K> cur, Criterion criterion) {
         if (Objects.isNull(criterion)) {
             return;
         }
-        for (Number k : search(cur, criterion).keySet()) {
-            cur.childMap().remove(k);
+        for (K k : search(cur, criterion).keySet()) {
+            cur.children().remove(k);
         }
     }
 
-    public void setPrev(NodeManager<T, R> prev) {
+    public void setPrev(NodeManager prev) {
         this.prev = prev;
     }
 
-    public void setNext(NodeManager<T, R> next) {
+    public void setNext(NodeManager next) {
         this.next = next;
     }
 
-    public Property<T, R> getProperty() {
+    public Property<?, ?, ?> getProperty() {
         return property;
     }
 
-    public void setProperty(Property<T, R> property) {
+    public void setProperty(Property<?, ?, ?> property) {
         this.property = property;
     }
 
-    private Object mapperDictKey(Object value) {
-        if (Objects.isNull(value)) {
-            return value;
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <K> Map<K, Node<K>> operate(Map childMap, Map.Entry<String, Object> operationEntry) {
+        String operationName = operationEntry.getKey();
+        if (Objects.equals(operationName, Operation.FUNC.getValue())) {
+            // 执行自定义函数
+            return ((Func) operationEntry.getValue()).apply(childMap, property);
         }
-        if (value instanceof Collection) {
-            @SuppressWarnings("unchecked")
-            Collection<R> values = (Collection<R>) value;
-            if (values.isEmpty()) {
-                return Collections.emptyList();
-            }
-            return values.stream().map(property::getDictKey).collect(Collectors.toList());
+        try {
+            return OperationRegistry.getInstance().getOperate(property.nodeType().name(), operationEntry.getKey()).query(childMap, property, operationEntry.getValue());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        //noinspection unchecked
-        return property.getDictKey((R) value);
     }
+
 }

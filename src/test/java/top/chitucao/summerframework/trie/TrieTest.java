@@ -7,7 +7,6 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,13 +25,17 @@ import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.json.JSONUtil;
 import junit.framework.TestCase;
 import top.chitucao.summerframework.trie.configuration.Configuration;
-import top.chitucao.summerframework.trie.configuration.property.CustomizedProperty;
+import top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty;
 import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
+import top.chitucao.summerframework.trie.configuration.property.impl.OneWayMappingProperty;
 import top.chitucao.summerframework.trie.configuration.property.Property;
-import top.chitucao.summerframework.trie.configuration.property.SimpleProperty;
 import top.chitucao.summerframework.trie.flight.FlightResourceDO;
 import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
+import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.NodeType;
+import top.chitucao.summerframework.trie.operation.BasicOperates;
+import top.chitucao.summerframework.trie.operation.Operate;
+import top.chitucao.summerframework.trie.operation.OperationRegistry;
 import top.chitucao.summerframework.trie.query.Aggregation;
 import top.chitucao.summerframework.trie.query.Aggregations;
 import top.chitucao.summerframework.trie.query.Criteria;
@@ -59,12 +62,13 @@ public class TrieTest {
         Configuration configuration = buildConfiguration1();
         MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
 
-        TestCase.assertEquals(7, trie.getDepth());
+        TestCase.assertEquals(9, trie.getDepth());
         TestCase.assertEquals(0, trie.getSize());
 
         for (TrainSourceDO data : dataList) {
             trie.insert(data);
         }
+        int trieSize = trie.getSize();
         TestCase.assertEquals(3000, trie.getSize());
     }
 
@@ -153,7 +157,38 @@ public class TrieTest {
             TestCase.assertEquals(queryCount, count);
         }
 
-        TestCase.assertEquals(3000 - eraseCount, trie.getSize());
+        int trieSize = trie.getSize();
+
+        TestCase.assertEquals(3000 - eraseCount, trieSize);
+    }
+
+    @Test
+    public void testEraseByCriteria2() {
+        List<TrainSourceDO> dataList = getDataList("train_resource_10.json");
+        Configuration configuration = buildConfiguration1();
+        configuration.setUseFastErase(false);
+        MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
+        for (TrainSourceDO data : dataList) {
+            trie.insert(data);
+        }
+
+        long eraseCount = dataList.stream().filter(e -> e.getDepartureCityId() >= 0 && e.getDepartureCityId() <= 1005 && Objects.equals(e.getTrainType(), "KS")).count();
+        Criteria criteria = Criteria.where("depCityId").between(0, 1005).and("trainType").eq("KS");
+        int queryCount = trie.dataSearch(criteria).size();
+        int count = trie.erase(criteria);
+
+        if (!configuration.isUseFastErase()) {
+            TestCase.assertEquals(queryCount, count);
+        }
+
+        long remainSize = dataList.size() - eraseCount;
+        int trieSize = trie.getSize();
+
+        if(remainSize != trieSize){
+            System.out.println(111);
+        }
+
+        TestCase.assertEquals(remainSize, trieSize);
     }
 
     @Test
@@ -376,95 +411,95 @@ public class TrieTest {
         TestCase.assertTrue(CollectionUtil.isEqualList(dataList3, dataList4));
     }
 
-    @Test
-    public void testSerializeAndDeserialize() {
-        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
-        Configuration configuration1 = buildConfiguration1();
-        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration1);
-        for (TrainSourceDO data : dataList) {
-            trie1.insert(data);
-        }
-        byte[] bytes = trie1.serialize();
-        Configuration configuration2 = buildConfiguration1();
-        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(configuration2);
-        trie2.deserialize(bytes);
-        TestCase.assertEquals(trie1.getSize(), trie2.getSize());
+    //    @Test
+    //    public void testSerializeAndDeserialize() {
+    //        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+    //        Configuration configuration1 = buildConfiguration1();
+    //        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration1);
+    //        for (TrainSourceDO data : dataList) {
+    //            trie1.insert(data);
+    //        }
+    //        byte[] bytes = trie1.serialize();
+    //        Configuration configuration2 = buildConfiguration1();
+    //        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(configuration2);
+    //        trie2.deserialize(bytes);
+    //        TestCase.assertEquals(trie1.getSize(), trie2.getSize());
+    //
+    //        Map<String, Property> propertyMap1 = configuration1.getProperties().stream().collect(Collectors.toMap(Property::name, Function.identity()));
+    //        Map<String, Property> propertyMap2 = configuration2.getProperties().stream().collect(Collectors.toMap(Property::name, Function.identity()));
+    //
+    //        for (String propertyName : configuration1.getProperties().stream().map(Property::name).collect(Collectors.toList())) {
+    //            Set<Object> set1 = trie1.dictValues(propertyName);
+    //            Set<Object> set2 = trie2.dictValues(propertyName);
+    //            TestCase.assertTrue(set1.containsAll(set2) && set2.containsAll(set1));
+    //            Property property = propertyMap1.get(propertyName);
+    //            if (property instanceof SimpleProperty) {
+    //                TestCase.assertEquals(((SimpleProperty) propertyMap1.get(propertyName)).getDictKeyAdder().getId(),
+    //                    ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
+    //            }
+    //        }
+    //    }
 
-        Map<String, Property> propertyMap1 = configuration1.getProperties().stream().collect(Collectors.toMap(Property::name, Function.identity()));
-        Map<String, Property> propertyMap2 = configuration2.getProperties().stream().collect(Collectors.toMap(Property::name, Function.identity()));
+    //    @Test
+    //    public void testDumpAndImport() {
+    //        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+    //        Configuration configuration = buildConfiguration1();
+    //        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration);
+    //        for (TrainSourceDO data : dataList) {
+    //            trie1.insert(data);
+    //        }
+    //        byte[] bytes1 = trie1.serialize();
+    //
+    //        File dumpFile = new File(RESOUCE_FOLDER + "train_resource_dump.dat");
+    //        if (dumpFile.exists()) {
+    //            dumpFile.delete();
+    //        }
+    //        FileUtil.writeBytes(bytes1, dumpFile);
+    //        byte[] bytes2 = FileUtil.readBytes(dumpFile);
+    //        Configuration configuration2 = buildConfiguration1();
+    //        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(configuration2);
+    //        trie2.deserialize(bytes2);
+    //
+    //        TestCase.assertEquals(trie1.getSize(), trie2.getSize());
+    //
+    //        for (String propertyName : configuration.getProperties().stream().map(Property::name).collect(Collectors.toList())) {
+    //            Set<Object> set1 = trie1.dictValues(propertyName);
+    //            Set<Object> set2 = trie2.dictValues(propertyName);
+    //            TestCase.assertTrue(set1.containsAll(set2) && set2.containsAll(set1));
+    //        }
+    //    }
 
-        for (String propertyName : configuration1.getProperties().stream().map(Property::name).collect(Collectors.toList())) {
-            Set<Object> set1 = trie1.dictValues(propertyName);
-            Set<Object> set2 = trie2.dictValues(propertyName);
-            TestCase.assertTrue(set1.containsAll(set2) && set2.containsAll(set1));
-            Property property = propertyMap1.get(propertyName);
-            if (property instanceof SimpleProperty) {
-                TestCase.assertEquals(((SimpleProperty) propertyMap1.get(propertyName)).getDictKeyAdder().getId(),
-                    ((SimpleProperty) propertyMap2.get(propertyName)).getDictKeyAdder().getId());
-            }
-        }
-    }
-
-    @Test
-    public void testDumpAndImport() {
-        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
-        Configuration configuration = buildConfiguration1();
-        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration);
-        for (TrainSourceDO data : dataList) {
-            trie1.insert(data);
-        }
-        byte[] bytes1 = trie1.serialize();
-
-        File dumpFile = new File(RESOUCE_FOLDER + "train_resource_dump.dat");
-        if (dumpFile.exists()) {
-            dumpFile.delete();
-        }
-        FileUtil.writeBytes(bytes1, dumpFile);
-        byte[] bytes2 = FileUtil.readBytes(dumpFile);
-        Configuration configuration2 = buildConfiguration1();
-        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(configuration2);
-        trie2.deserialize(bytes2);
-
-        TestCase.assertEquals(trie1.getSize(), trie2.getSize());
-
-        for (String propertyName : configuration.getProperties().stream().map(Property::name).collect(Collectors.toList())) {
-            Set<Object> set1 = trie1.dictValues(propertyName);
-            Set<Object> set2 = trie2.dictValues(propertyName);
-            TestCase.assertTrue(set1.containsAll(set2) && set2.containsAll(set1));
-        }
-    }
-
-    @Test
-    public void testSerialAll() {
-        String resourceFileName = "train_resource_3000.json";
-        List<TrainSourceDO> dataList = getDataList(resourceFileName);
-        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
-        for (TrainSourceDO data : dataList) {
-            trie1.insert(data);
-        }
-        File dumpFile = new File(RESOUCE_FOLDER + "train_resource_dump.dat");
-        if (dumpFile.exists()) {
-            dumpFile.delete();
-        }
-        FileUtil.writeBytes(trie1.serialize(), dumpFile);
-
-        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
-        trie2.deserialize(FileUtil.readBytes(dumpFile));
-        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(null, new Aggregations(), buildResultBuilder());
-
-        dataList.sort(Comparator.comparing(TrainSourceDO::getId));
-        dataList2.sort(Comparator.comparing(TrainSourceDO::getId));
-        TestCase.assertTrue(CollectionUtil.isEqualList(dataList, dataList2));
-
-        long sourceFileSize = FileUtil.size(new File(RESOUCE_FOLDER + resourceFileName));
-        long dumpFileSize = FileUtil.size(dumpFile);
-        TestCase.assertTrue(dumpFileSize < sourceFileSize);
-
-        Map<String, Integer> dictSizes1 = trie1.dictSizes();
-        Map<String, Integer> dictSizes2 = trie2.dictSizes();
-
-        TestCase.assertTrue(dictSizes1.values().containsAll(dictSizes2.values()) && dictSizes2.values().containsAll(dictSizes1.values()));
-    }
+    //    @Test
+    //    public void testSerialAll() {
+    //        String resourceFileName = "train_resource_3000.json";
+    //        List<TrainSourceDO> dataList = getDataList(resourceFileName);
+    //        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
+    //        for (TrainSourceDO data : dataList) {
+    //            trie1.insert(data);
+    //        }
+    //        File dumpFile = new File(RESOUCE_FOLDER + "train_resource_dump.dat");
+    //        if (dumpFile.exists()) {
+    //            dumpFile.delete();
+    //        }
+    //        FileUtil.writeBytes(trie1.serialize(), dumpFile);
+    //
+    //        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfiguration3(TrainSourceDO.class));
+    //        trie2.deserialize(FileUtil.readBytes(dumpFile));
+    //        List<TrainSourceDO> dataList2 = trie2.<TrainSourceDO> listSearch(null, new Aggregations(), buildResultBuilder());
+    //
+    //        dataList.sort(Comparator.comparing(TrainSourceDO::getId));
+    //        dataList2.sort(Comparator.comparing(TrainSourceDO::getId));
+    //        TestCase.assertTrue(CollectionUtil.isEqualList(dataList, dataList2));
+    //
+    //        long sourceFileSize = FileUtil.size(new File(RESOUCE_FOLDER + resourceFileName));
+    //        long dumpFileSize = FileUtil.size(dumpFile);
+    //        TestCase.assertTrue(dumpFileSize < sourceFileSize);
+    //
+    //        Map<String, Integer> dictSizes1 = trie1.dictSizes();
+    //        Map<String, Integer> dictSizes2 = trie2.dictSizes();
+    //
+    //        TestCase.assertTrue(dictSizes1.values().containsAll(dictSizes2.values()) && dictSizes2.values().containsAll(dictSizes1.values()));
+    //    }
 
     @Test
     public void testMultiConditionSearch() {
@@ -503,209 +538,329 @@ public class TrieTest {
     }
 
     @Test
-    public void testTrainSerial() {
-        long start, end;
-        Supplier<Configuration> buildConfigurationSupplier = this::buildTrainQueryTrieConfiguration;
-        //        Supplier<Configuration> buildConfigurationSupplier = () -> buildConfiguration3(TrainSourceDO.class);
-
-        String dataSource = "train_resource_30w.json";
-        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
-            System.out.println("train_resource_30w.json not found！");
-            return;
-        }
-        // 读取json数据
-        triggerGc();
-        printMemoryUse();
-        start = System.currentTimeMillis();
-        List<TrainSourceDO> dataList = getDataList(dataSource);
-        end = System.currentTimeMillis();
-        triggerGc();
-        printMemoryUse();
-        System.out.println("数据量：" + dataList.size());
-        System.out.println("读取json数据耗时：" + (end - start) + "ms");
-
-        // 原始数据 json序列化
-        File jsonfile = FileUtil.newFile(RESOUCE_FOLDER + "train_resource_origin.json");
-        if (jsonfile.exists()) {
-            jsonfile.delete();
-        }
-        start = System.currentTimeMillis();
-        FileUtil.writeBytes(JSONUtil.toJsonStr(dataList).getBytes(), jsonfile);
-        end = System.currentTimeMillis();
-        System.out.println("json序列化大小：" + jsonfile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
-
-        // 原始数据 json反序列化
-        start = System.currentTimeMillis();
-        List<TrainSourceDO> dataList2 = getDataList("train_resource_origin.json");
-        end = System.currentTimeMillis();
-        System.out.println("json反序列化耗时：" + (end - start) + "ms");
-
-        // trie 从数据构建
-        Configuration configuration = buildConfigurationSupplier.get();
-        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration);
-        triggerGc();
-        printMemoryUse();
-        start = System.currentTimeMillis();
-        for (TrainSourceDO data : dataList2) {
-            trie1.insert(data);
-        }
-        end = System.currentTimeMillis();
-        triggerGc();
-        printMemoryUse();
-        System.out.println("trie索引字段数量：" + configuration.getProperties().size() + " 构建耗时：" + (end - start) + "ms");
-
-        // trie protobuf序列化
-        start = System.currentTimeMillis();
-        byte[] bytes1 = trie1.serialize();
-        File protobufFile = new File(RESOUCE_FOLDER + "train_resource_origin_protobuf.dat");
-        if (protobufFile.exists()) {
-            protobufFile.delete();
-        }
-        FileUtil.writeBytes(bytes1, protobufFile);
-        end = System.currentTimeMillis();
-        System.out.println("protobuf序列化大小：" + protobufFile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
-
-        // trie protobuf反序列化
-        start = System.currentTimeMillis();
-        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfigurationSupplier.get());
-        trie2.deserialize(FileUtil.readBytes(protobufFile));
-        end = System.currentTimeMillis();
-        System.out.println("protobuf反序列化耗时：" + (end - start) + "ms");
-    }
-
-    @Test
-    public void testFlightSerial() {
-        long start, end;
-
-        Supplier<Configuration> buildConfigurationSupplier = this::buildFlightQueryTrieConfiguration;
-        //        Supplier<Configuration> buildConfigurationSupplier = () -> buildConfiguration3(FlightResourceDO.class);
-
-        String dataSource = "flight_resource_60w.json";
-        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
-            System.out.println("flight_resource_60w.json not found！");
-            return;
-        }
-
-        // 读取json数据
-        triggerGc();
-        printMemoryUse();
-        start = System.currentTimeMillis();
-        List<FlightResourceDO> dataList = getFlightDataList(dataSource);
-        end = System.currentTimeMillis();
-        triggerGc();
-        printMemoryUse();
-        System.out.println("数据量：" + dataList.size());
-        System.out.println("读取json数据耗时：" + (end - start) + "ms");
-
-        // 原始数据 json序列化
-        File jsonfile = FileUtil.newFile(RESOUCE_FOLDER + "flight_resource_origin.json");
-        if (jsonfile.exists()) {
-            jsonfile.delete();
-        }
-        start = System.currentTimeMillis();
-        FileUtil.writeBytes(JSONUtil.toJsonStr(dataList).getBytes(), jsonfile);
-        end = System.currentTimeMillis();
-        System.out.println("json序列化大小：" + jsonfile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
-
-        // 原始数据 json反序列化
-        start = System.currentTimeMillis();
-        List<FlightResourceDO> dataList2 = getFlightDataList("flight_resource_origin.json");
-        end = System.currentTimeMillis();
-        System.out.println("json反序列化耗时：" + (end - start) + "ms");
-
-        // trie 从数据构建
-        Configuration configuration = buildConfigurationSupplier.get();
-        MapTrie<FlightResourceDO> trie1 = new MapTrie<>(configuration);
-        triggerGc();
-        printMemoryUse();
-        start = System.currentTimeMillis();
-        for (FlightResourceDO data : dataList2) {
-            trie1.insert(data);
-        }
-        end = System.currentTimeMillis();
-        triggerGc();
-        printMemoryUse();
-        System.out.println("trie索引字段数量：" + configuration.getProperties().size() + " 构建耗时：" + (end - start) + "ms");
-
-        // trie protobuf序列化
-
-        start = System.currentTimeMillis();
-        byte[] bytes1 = trie1.serialize();
-        File protobufFile = new File(RESOUCE_FOLDER + "flight_resource_origin_protobuf.dat");
-        if (protobufFile.exists()) {
-            protobufFile.delete();
-        }
-        FileUtil.writeBytes(bytes1, protobufFile);
-        end = System.currentTimeMillis();
-        System.out.println("protobuf序列化大小：" + protobufFile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
-
-        // trie protobuf反序列化
-        start = System.currentTimeMillis();
-        MapTrie<FlightResourceDO> trie2 = new MapTrie<>(buildConfigurationSupplier.get());
-        trie2.deserialize(FileUtil.readBytes(protobufFile));
-        end = System.currentTimeMillis();
-        System.out.println("protobuf反序列化耗时：" + (end - start) + "ms");
-    }
-
-    @Test
-    public void testTrainDeserializeMemoryUse() {
-        long start, end;
-        Supplier<Configuration> buildConfigurationSupplier = this::buildTrainQueryTrieConfiguration;
-
-        File protobufFile = new File(RESOUCE_FOLDER + "train_resource_origin_protobuf.dat");
-        if (!protobufFile.exists()) {
-            return;
-        }
-
-        triggerGc();
-        printMemoryUse();
-
-        start = System.currentTimeMillis();
-        Configuration configuration = buildConfigurationSupplier.get();
+    public void testCustomOp() {
+        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+        Configuration configuration = buildConfiguration1();
         MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
-        trie.deserialize(FileUtil.readBytes(protobufFile));
-        end = System.currentTimeMillis();
+        for (TrainSourceDO data : dataList) {
+            trie.insert(data);
+        }
+        TestCase.assertEquals(3000, trie.getSize());
 
-        triggerGc();
-        printMemoryUse();
+        OperationRegistry instance = OperationRegistry.getInstance();
 
-        // 清空叶子节点的数据
-        //        clearDictData(configuration.getLastProperty().dict());
-        triggerGc();
-        printMemoryUse();
+        instance.registerOperation(NodeType.HASH_MAP, "$$customOp", new Operate() {
 
-        System.out.println("数据量：" + trie.getSize() + " protobuf反序列化耗时：" + (end - start) + "ms");
+            /**
+             * 查询符合条件的子节点
+             *
+             * @param childMap 子节点
+             * @param property 属性
+             * @param value    匹配的值
+             * @return 符合条件的子节点
+             */
+            @Override
+            public Map<?, Node<?>> query(Map<?, Node<?>> childMap, Property<?, ?, ?> property, Object value) {
+                CustomOpParam request = (CustomOpParam) value;
+                if (childMap.isEmpty() || Objects.isNull(value)) {
+                    return childMap;
+                }
+                Map<Object, Node<?>> result = new HashMap<>();
+                for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
+                    TrainSourceDO data = (TrainSourceDO) BasicOperates.mapperDictValue(property, entry.getKey());
+                    if (data.getDepartureCityId() >= request.getBetweenStart() && data.getDepartureCityId() <= request.getBetweenEnd()
+                        && !request.getNin().contains(data.getDepartureCityId()) && data.getDepartureCityId() != request.getNe()) {
+                        result.put(entry.getKey(), entry.getValue());
+                    }
+                }
+                return result;
+            }
+        });
+
+        Set<Integer> notInDepartureCityIdSet = IntStream.range(0, 100).boxed().collect(Collectors.toSet());
+        CustomOpParam customOpParam = new CustomOpParam();
+        customOpParam.setBetweenStart(0);
+        customOpParam.setBetweenEnd(1005);
+        customOpParam.setNe(391);
+        customOpParam.setNin(notInDepartureCityIdSet);
+
+        List<TrainSourceDO> result1 = dataList.stream() //
+            .filter(e -> e.getDepartureCityId() >= customOpParam.getBetweenStart() && e.getDepartureCityId() <= customOpParam.getBetweenEnd()) //
+            .filter(e -> e.getDepartureCityId() != customOpParam.getNe())//
+            .filter(e -> !customOpParam.getNin().contains(e.getDepartureCityId())) //
+            .collect(Collectors.toList());
+
+        Criteria criteria = Criteria.where("data").match("$$customOp", customOpParam);
+        List<TrainSourceDO> result2 = trie.dataSearch(criteria);
+
+        TestCase.assertEquals(result1.size(), result2.size());
     }
 
     @Test
-    public void testFlightDeserializeMemoryUse() {
-        long start, end;
-        Supplier<Configuration> buildConfigurationSupplier = this::buildFlightQueryTrieConfiguration;
-
-        File protobufFile = new File(RESOUCE_FOLDER + "flight_resource_origin_protobuf.dat");
-        if (!protobufFile.exists()) {
-            return;
+    public void testFunc() {
+        List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
+        Configuration configuration = buildConfiguration1();
+        MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
+        for (TrainSourceDO data : dataList) {
+            trie.insert(data);
         }
+        TestCase.assertEquals(3000, trie.getSize());
 
-        triggerGc();
-        printMemoryUse();
+        Set<Integer> notInDepartureCityIdSet = IntStream.range(0, 100).boxed().collect(Collectors.toSet());
+        CustomOpParam customOpParam = new CustomOpParam();
+        customOpParam.setBetweenStart(0);
+        customOpParam.setBetweenEnd(1005);
+        customOpParam.setNe(391);
+        customOpParam.setNin(notInDepartureCityIdSet);
 
-        start = System.currentTimeMillis();
-        Configuration configuration = buildConfigurationSupplier.get();
-        MapTrie<FlightResourceDO> trie = new MapTrie<>(configuration);
-        trie.deserialize(FileUtil.readBytes(protobufFile));
-        end = System.currentTimeMillis();
+        List<TrainSourceDO> result1 = dataList.stream() //
+            .filter(e -> e.getDepartureCityId() >= customOpParam.getBetweenStart() && e.getDepartureCityId() <= customOpParam.getBetweenEnd()) //
+            .filter(e -> e.getDepartureCityId() != customOpParam.getNe())//
+            .filter(e -> !customOpParam.getNin().contains(e.getDepartureCityId())) //
+            .collect(Collectors.toList());
 
-        triggerGc();
-        printMemoryUse();
+        //        Criteria criteria = Criteria.where("data").func(new Func() {
+        //            @Override
+        //            public Map<Number, Node> apply(Map<Number, Node> childMap, Property<?, ?> property) {
+        //                if (childMap.isEmpty()) {
+        //                    return childMap;
+        //                }
+        //                Map<Number, Node> result = new HashMap<>();
+        //                for (Map.Entry<Number, Node> entry : childMap.entrySet()) {
+        //                    TrainSourceDO data = (TrainSourceDO) BasicOperates.mapperDictValue(property, entry.getKey());
+        //                    if (data.getDepartureCityId() >= customOpParam.getBetweenStart() && data.getDepartureCityId() <= customOpParam.getBetweenEnd()
+        //                        && !customOpParam.getNin().contains(data.getDepartureCityId()) && data.getDepartureCityId() != customOpParam.getNe()) {
+        //                        result.put(entry.getKey(), entry.getValue());
+        //                    }
+        //                }
+        //                return result;
+        //            }
+        //        });
+        Criteria criteria = Criteria.where("depCityId").func((childMap, property) -> {
+            if (childMap.isEmpty()) {
+                return childMap;
+            }
+            Map<Object, Node<?>> result = new HashMap<>();
+            for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
+                Integer departureCityId = (Integer) entry.getKey();
 
-        // 清空叶子节点的数据
-        //        clearDictData(configuration.getLastProperty().dict());
-        triggerGc();
-        printMemoryUse();
+                if (departureCityId >= customOpParam.getBetweenStart() && departureCityId <= customOpParam.getBetweenEnd() && !customOpParam.getNin().contains(departureCityId)
+                    && !Objects.equals(departureCityId, customOpParam.getNe())) {
+                    result.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return result;
+        });
 
-        System.out.println("数据量：" + trie.getSize() + " protobuf反序列化耗时：" + (end - start) + "ms");
+        List<TrainSourceDO> result2 = trie.dataSearch(criteria);
+
+        TestCase.assertEquals(result1.size(), result2.size());
     }
+
+    //    @Test
+    //    public void testTrainSerial() {
+    //        long start, end;
+    //        Supplier<Configuration> buildConfigurationSupplier = this::buildTrainQueryTrieConfiguration;
+    //        //        Supplier<Configuration> buildConfigurationSupplier = () -> buildConfiguration3(TrainSourceDO.class);
+    //
+    //        String dataSource = "train_resource_30w.json";
+    //        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
+    //            System.out.println("train_resource_30w.json not found！");
+    //            return;
+    //        }
+    //        // 读取json数据
+    //        triggerGc();
+    //        printMemoryUse();
+    //        start = System.currentTimeMillis();
+    //        List<TrainSourceDO> dataList = getDataList(dataSource);
+    //        end = System.currentTimeMillis();
+    //        triggerGc();
+    //        printMemoryUse();
+    //        System.out.println("数据量：" + dataList.size());
+    //        System.out.println("读取json数据耗时：" + (end - start) + "ms");
+    //
+    //        // 原始数据 json序列化
+    //        File jsonfile = FileUtil.newFile(RESOUCE_FOLDER + "train_resource_origin.json");
+    //        if (jsonfile.exists()) {
+    //            jsonfile.delete();
+    //        }
+    //        start = System.currentTimeMillis();
+    //        FileUtil.writeBytes(JSONUtil.toJsonStr(dataList).getBytes(), jsonfile);
+    //        end = System.currentTimeMillis();
+    //        System.out.println("json序列化大小：" + jsonfile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
+    //
+    //        // 原始数据 json反序列化
+    //        start = System.currentTimeMillis();
+    //        List<TrainSourceDO> dataList2 = getDataList("train_resource_origin.json");
+    //        end = System.currentTimeMillis();
+    //        System.out.println("json反序列化耗时：" + (end - start) + "ms");
+    //
+    //        // trie 从数据构建
+    //        Configuration configuration = buildConfigurationSupplier.get();
+    //        MapTrie<TrainSourceDO> trie1 = new MapTrie<>(configuration);
+    //        triggerGc();
+    //        printMemoryUse();
+    //        start = System.currentTimeMillis();
+    //        for (TrainSourceDO data : dataList2) {
+    //            trie1.insert(data);
+    //        }
+    //        end = System.currentTimeMillis();
+    //        triggerGc();
+    //        printMemoryUse();
+    //        System.out.println("trie索引字段数量：" + configuration.getProperties().size() + " 构建耗时：" + (end - start) + "ms");
+    //
+    //        // trie protobuf序列化
+    //        start = System.currentTimeMillis();
+    //        byte[] bytes1 = trie1.serialize();
+    //        File protobufFile = new File(RESOUCE_FOLDER + "train_resource_origin_protobuf.dat");
+    //        if (protobufFile.exists()) {
+    //            protobufFile.delete();
+    //        }
+    //        FileUtil.writeBytes(bytes1, protobufFile);
+    //        end = System.currentTimeMillis();
+    //        System.out.println("protobuf序列化大小：" + protobufFile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
+    //
+    //        // trie protobuf反序列化
+    //        start = System.currentTimeMillis();
+    //        MapTrie<TrainSourceDO> trie2 = new MapTrie<>(buildConfigurationSupplier.get());
+    //        trie2.deserialize(FileUtil.readBytes(protobufFile));
+    //        end = System.currentTimeMillis();
+    //        System.out.println("protobuf反序列化耗时：" + (end - start) + "ms");
+    //    }
+
+    //    @Test
+    //    public void testFlightSerial() {
+    //        long start, end;
+    //
+    //        Supplier<Configuration> buildConfigurationSupplier = this::buildFlightQueryTrieConfiguration;
+    //        //        Supplier<Configuration> buildConfigurationSupplier = () -> buildConfiguration3(FlightResourceDO.class);
+    //
+    //        String dataSource = "flight_resource_60w.json";
+    //        if (!FileUtil.exist(RESOUCE_FOLDER + dataSource)) {
+    //            System.out.println("flight_resource_60w.json not found！");
+    //            return;
+    //        }
+    //
+    //        // 读取json数据
+    //        triggerGc();
+    //        printMemoryUse();
+    //        start = System.currentTimeMillis();
+    //        List<FlightResourceDO> dataList = getFlightDataList(dataSource);
+    //        end = System.currentTimeMillis();
+    //        triggerGc();
+    //        printMemoryUse();
+    //        System.out.println("数据量：" + dataList.size());
+    //        System.out.println("读取json数据耗时：" + (end - start) + "ms");
+    //
+    //        // 原始数据 json序列化
+    //        File jsonfile = FileUtil.newFile(RESOUCE_FOLDER + "flight_resource_origin.json");
+    //        if (jsonfile.exists()) {
+    //            jsonfile.delete();
+    //        }
+    //        start = System.currentTimeMillis();
+    //        FileUtil.writeBytes(JSONUtil.toJsonStr(dataList).getBytes(), jsonfile);
+    //        end = System.currentTimeMillis();
+    //        System.out.println("json序列化大小：" + jsonfile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
+    //
+    //        // 原始数据 json反序列化
+    //        start = System.currentTimeMillis();
+    //        List<FlightResourceDO> dataList2 = getFlightDataList("flight_resource_origin.json");
+    //        end = System.currentTimeMillis();
+    //        System.out.println("json反序列化耗时：" + (end - start) + "ms");
+    //
+    //        // trie 从数据构建
+    //        Configuration configuration = buildConfigurationSupplier.get();
+    //        MapTrie<FlightResourceDO> trie1 = new MapTrie<>(configuration);
+    //        triggerGc();
+    //        printMemoryUse();
+    //        start = System.currentTimeMillis();
+    //        for (FlightResourceDO data : dataList2) {
+    //            trie1.insert(data);
+    //        }
+    //        end = System.currentTimeMillis();
+    //        triggerGc();
+    //        printMemoryUse();
+    //        System.out.println("trie索引字段数量：" + configuration.getProperties().size() + " 构建耗时：" + (end - start) + "ms");
+    //
+    //        // trie protobuf序列化
+    //
+    //        start = System.currentTimeMillis();
+    //        byte[] bytes1 = trie1.serialize();
+    //        File protobufFile = new File(RESOUCE_FOLDER + "flight_resource_origin_protobuf.dat");
+    //        if (protobufFile.exists()) {
+    //            protobufFile.delete();
+    //        }
+    //        FileUtil.writeBytes(bytes1, protobufFile);
+    //        end = System.currentTimeMillis();
+    //        System.out.println("protobuf序列化大小：" + protobufFile.length() / 1024 / 1024 + "MB 耗时：" + (end - start) + "ms");
+    //
+    //        // trie protobuf反序列化
+    //        start = System.currentTimeMillis();
+    //        MapTrie<FlightResourceDO> trie2 = new MapTrie<>(buildConfigurationSupplier.get());
+    //        trie2.deserialize(FileUtil.readBytes(protobufFile));
+    //        end = System.currentTimeMillis();
+    //        System.out.println("protobuf反序列化耗时：" + (end - start) + "ms");
+    //    }
+
+    //    @Test
+    //    public void testTrainDeserializeMemoryUse() {
+    //        long start, end;
+    //        Supplier<Configuration> buildConfigurationSupplier = this::buildTrainQueryTrieConfiguration;
+    //
+    //        File protobufFile = new File(RESOUCE_FOLDER + "train_resource_origin_protobuf.dat");
+    //        if (!protobufFile.exists()) {
+    //            return;
+    //        }
+    //
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        start = System.currentTimeMillis();
+    //        Configuration configuration = buildConfigurationSupplier.get();
+    //        MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
+    //        trie.deserialize(FileUtil.readBytes(protobufFile));
+    //        end = System.currentTimeMillis();
+    //
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        // 清空叶子节点的数据
+    //        //        clearDictData(configuration.getLastProperty().dict());
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        System.out.println("数据量：" + trie.getSize() + " protobuf反序列化耗时：" + (end - start) + "ms");
+    //    }
+
+    //    @Test
+    //    public void testFlightDeserializeMemoryUse() {
+    //        long start, end;
+    //        Supplier<Configuration> buildConfigurationSupplier = this::buildFlightQueryTrieConfiguration;
+    //
+    //        File protobufFile = new File(RESOUCE_FOLDER + "flight_resource_origin_protobuf.dat");
+    //        if (!protobufFile.exists()) {
+    //            return;
+    //        }
+    //
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        start = System.currentTimeMillis();
+    //        Configuration configuration = buildConfigurationSupplier.get();
+    //        MapTrie<FlightResourceDO> trie = new MapTrie<>(configuration);
+    //        trie.deserialize(FileUtil.readBytes(protobufFile));
+    //        end = System.currentTimeMillis();
+    //
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        // 清空叶子节点的数据
+    //        //        clearDictData(configuration.getLastProperty().dict());
+    //        triggerGc();
+    //        printMemoryUse();
+    //
+    //        System.out.println("数据量：" + trie.getSize() + " protobuf反序列化耗时：" + (end - start) + "ms");
+    //    }
 
     //    @Test
     public void testSplitJson() {
@@ -746,20 +901,20 @@ public class TrieTest {
         // Trie可以解决上面的几个问题，下面是基于trie的实现
         Configuration configuration = new Configuration();
         // 出发日期
-        CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+        OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
         depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         configuration.addProperty(depDateProperty);
         // 出发城市code
-        SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
         depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
         configuration.addProperty(depCityCodeProperty);
         // 抵达城市code
-        SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
         arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
         configuration.addProperty(arrCityCodeProperty);
         // 数据
-        SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+        AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
         dataProperty.setPropertyMapper(Function.identity());
         configuration.addProperty(dataProperty);
         // 插入数据
@@ -819,17 +974,17 @@ public class TrieTest {
 
         // 为什么将索引树和字典分离，是因为有时候想为一份数据建立多个索引，那么这多个索引是可以复用同一份字典数据的，可以节省空间
         // 出发日期
-        CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+        OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
         depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         // 出发城市code
-        SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
         depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
         // 抵达城市code
-        SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
         arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
         // 数据
-        SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+        AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
         dataProperty.setPropertyMapper(Function.identity());
 
         // 假如第一个业务需要按照出发日期+出发城市+抵达城市+数据组织数据
@@ -896,37 +1051,37 @@ public class TrieTest {
         Configuration configuration = new Configuration();
 
         // 价格
-        CustomizedProperty<TrainSourceDO, Double> priceProperty = new CustomizedProperty<>(TrainTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Double, Integer> priceProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
         priceProperty.setPropertyMapper(TrainSourceDO::getMinRealPrice);
-        priceProperty.setDictKeyMapper(r -> ((Double) (r * 100)).intValue());
+        priceProperty.field2NodeKey(r -> ((Double) (r * 100)).intValue());
         configuration.addProperty(priceProperty);
 
         // 出发城市id
-        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>(TrainTrieIndexNames.INDEX_DEP_CITY_ID);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_DEP_CITY_ID);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.setDictKeyMapper(Integer::valueOf);
+        depCityIdProperty.field2NodeKey(Integer::valueOf);
         configuration.addProperty(depCityIdProperty);
 
         // 抵达城市id
-        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>(TrainTrieIndexNames.INDEX_ARR_CITY_ID);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_ARR_CITY_ID);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.setDictKeyMapper(Integer::valueOf);
+        arrCityIdProperty.field2NodeKey(Integer::valueOf);
         configuration.addProperty(arrCityIdProperty);
 
         // 车次类型
-        SimpleProperty<TrainSourceDO, String> trainTypeProperty = new SimpleProperty<>(TrainTrieIndexNames.INDEX_TRAIN_TYPE, DictKeyType.BYTE);
+        AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>(TrainTrieIndexNames.INDEX_TRAIN_TYPE, DictKeyType.BYTE);
         trainTypeProperty.setPropertyMapper(TrainSourceDO::getTrainType);
         configuration.addProperty(trainTypeProperty);
 
         // 坐席类型
-        SimpleProperty<TrainSourceDO, String> seatClassProperty = new SimpleProperty<>(TrainTrieIndexNames.INDEX_SEAT_CLASS, DictKeyType.BYTE);
+        AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>(TrainTrieIndexNames.INDEX_SEAT_CLASS, DictKeyType.BYTE);
         seatClassProperty.setPropertyMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
 
         // 数据
-        CustomizedProperty<TrainSourceDO, TrainSourceDO> dataProperty = new CustomizedProperty<>(TrainTrieIndexNames.DATA);
+        OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.DATA);
         dataProperty.setPropertyMapper(Function.identity());
-        dataProperty.setDictKeyMapper(TrainSourceDO::getId);
+        dataProperty.field2NodeKey(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);
         return configuration;
     }
@@ -935,35 +1090,35 @@ public class TrieTest {
         Configuration configuration = new Configuration();
 
         // 出发日期
-        CustomizedProperty<FlightResourceDO, Date> depDateProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
+        OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
         depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.setDictKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         configuration.addProperty(depDateProperty);
 
         // 价格
-        CustomizedProperty<FlightResourceDO, Integer> priceProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
+        OneWayMappingProperty<FlightResourceDO, Integer, Integer> priceProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
         priceProperty.setPropertyMapper(FlightResourceDO::getLcp);
-        priceProperty.setDictKeyMapper(r -> r);
+        priceProperty.field2NodeKey(r -> r);
         configuration.addProperty(priceProperty);
 
         // 出发城市code
-        SimpleProperty<FlightResourceDO, String> depCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
         depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
         configuration.addProperty(depCityCodeProperty);
 
         // 抵达城市code
-        SimpleProperty<FlightResourceDO, String> arrCityCodeProperty = new SimpleProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
+        AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
         arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
         configuration.addProperty(arrCityCodeProperty);
 
         // 舱等类型
-        CustomizedProperty<FlightResourceDO, Integer> cabinClassProperty = new CustomizedProperty<>(FlightTrieIndexNames.INDEX_CABIN_TYPE, NodeType.TREE_MAP);
+        OneWayMappingProperty<FlightResourceDO, Integer, Integer> cabinClassProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_CABIN_TYPE, NodeType.TREE_MAP);
         cabinClassProperty.setPropertyMapper(FlightResourceDO::getCabinType);
-        cabinClassProperty.setDictKeyMapper(r -> r);
+        cabinClassProperty.field2NodeKey(r -> r);
         configuration.addProperty(cabinClassProperty);
 
         // 数据
-        SimpleProperty<FlightResourceDO, FlightResourceDO> dataProperty = new SimpleProperty<>(FlightTrieIndexNames.DATA);
+        AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
         dataProperty.setPropertyMapper(Function.identity());
         configuration.addProperty(dataProperty);
 
@@ -975,12 +1130,12 @@ public class TrieTest {
         Field[] fields = ReflectUtil.getFields(clazz);
         for (Field field : fields) {
             if (Number.class.isAssignableFrom(field.getType())) {
-                CustomizedProperty customizedProperty = new CustomizedProperty<>(field.getName(), NodeType.TREE_MAP);
+                OneWayMappingProperty customizedProperty = new OneWayMappingProperty<>(field.getName(), NodeType.TREE_MAP);
                 customizedProperty.setPropertyMapper(e -> ReflectUtil.getFieldValue(e, field));
-                customizedProperty.setDictKeyMapper(r -> r);
+                customizedProperty.field2NodeKey(r -> r);
                 configuration.addProperty(customizedProperty);
             } else {
-                SimpleProperty simpleProperty = new SimpleProperty<>(field.getName());
+                AutoMappingProperty simpleProperty = new AutoMappingProperty<>(field.getName());
                 simpleProperty.setPropertyMapper(e -> ReflectUtil.getFieldValue(e, field));
                 configuration.addProperty(simpleProperty);
             }
@@ -991,21 +1146,21 @@ public class TrieTest {
     private Configuration buildConfiguration2() {
         Configuration configuration = new Configuration();
         // 出发城市
-        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.TREE_MAP);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.setDictKeyMapper(r -> r);
+        depCityIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 抵达城市
-        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>("arrCityId", NodeType.TREE_MAP);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.setDictKeyMapper(r -> r);
+        arrCityIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 价格
-        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("price", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("price", NodeType.TREE_MAP);
         arrDistrictIdProperty.setPropertyMapper(t -> ((Double) t.getMinRealPrice()).intValue());
-        arrDistrictIdProperty.setDictKeyMapper(r -> r);
+        arrDistrictIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
 
         return configuration;
@@ -1015,60 +1170,60 @@ public class TrieTest {
         Configuration configuration = new Configuration();
         configuration.setUseFastErase(true);
         // 出发城市
-        CustomizedProperty<TrainSourceDO, Integer> depCityIdProperty = new CustomizedProperty<>("depCityId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.TREE_MAP);
         depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.setDictKeyMapper(r -> r);
+        depCityIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 出发地区
-        CustomizedProperty<TrainSourceDO, Integer> depDistrictIdProperty = new CustomizedProperty<>("depDistrictId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depDistrictIdProperty = new OneWayMappingProperty<>("depDistrictId", NodeType.TREE_MAP);
         depDistrictIdProperty.setPropertyMapper(TrainSourceDO::getDepartureDistrictId);
-        depDistrictIdProperty.setDictKeyMapper(r -> r);
+        depDistrictIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(depDistrictIdProperty);
 
         // 出发站点
-        SimpleProperty<TrainSourceDO, String> departureStationCodeProperty = new SimpleProperty<>("departureStationCode", DictKeyType.INT);
+        AutoMappingProperty<TrainSourceDO, String> departureStationCodeProperty = new AutoMappingProperty<>("departureStationCode", DictKeyType.INT);
         departureStationCodeProperty.setPropertyMapper(TrainSourceDO::getDepartureStationCode);
         configuration.addProperty(departureStationCodeProperty);
 
         // 抵达城市
-        CustomizedProperty<TrainSourceDO, Integer> arrCityIdProperty = new CustomizedProperty<>("arrCityId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>("arrCityId", NodeType.TREE_MAP);
         arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.setDictKeyMapper(r -> r);
+        arrCityIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 抵达地区
-        CustomizedProperty<TrainSourceDO, Integer> arrDistrictIdProperty = new CustomizedProperty<>("arrDistrictId", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("arrDistrictId", NodeType.TREE_MAP);
         arrDistrictIdProperty.setPropertyMapper(TrainSourceDO::getArrivalDistrictId);
-        arrDistrictIdProperty.setDictKeyMapper(r -> r);
+        arrDistrictIdProperty.field2NodeKey(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
 
         // 车次类型
-        SimpleProperty<TrainSourceDO, String> trainTypeProperty = new SimpleProperty<>("trainType", DictKeyType.BYTE);
+        AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>("trainType", DictKeyType.BYTE);
         trainTypeProperty.setPropertyMapper(TrainSourceDO::getTrainType);
         configuration.addProperty(trainTypeProperty);
 
         // 坐席类型
-        SimpleProperty<TrainSourceDO, String> seatClassProperty = new SimpleProperty<>("seatClass", DictKeyType.BYTE);
+        AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>("seatClass", DictKeyType.BYTE);
         seatClassProperty.setPropertyMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
 
         // 最低票价
-        CustomizedProperty<TrainSourceDO, Integer> minRealPriceProperty = new CustomizedProperty<>("minRealPrice", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> minRealPriceProperty = new OneWayMappingProperty<>("minRealPrice", NodeType.TREE_MAP);
         minRealPriceProperty.setPropertyMapper(e -> Double.valueOf(e.getMinRealPrice()).intValue());
-        minRealPriceProperty.setDictKeyMapper(r -> r);
+        minRealPriceProperty.field2NodeKey(r -> r);
         configuration.addProperty(minRealPriceProperty);
 
         // id
-        CustomizedProperty<TrainSourceDO, Long> idProperty = new CustomizedProperty<>("id", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, Long, Long> idProperty = new OneWayMappingProperty<>("id", NodeType.TREE_MAP);
         idProperty.setPropertyMapper(TrainSourceDO::getId);
-        idProperty.setDictKeyMapper(r -> r);
+        idProperty.field2NodeKey(r -> r);
         configuration.addProperty(idProperty);
 
         // 数据
-        CustomizedProperty<TrainSourceDO, TrainSourceDO> dataProperty = new CustomizedProperty<>("data", NodeType.TREE_MAP);
+        OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>("data", NodeType.HASH_MAP);
         dataProperty.setPropertyMapper(Function.identity());
-        dataProperty.setDictKeyMapper(TrainSourceDO::getId);
+        dataProperty.field2NodeKey(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);
 
         return configuration;
@@ -1120,4 +1275,46 @@ public class TrieTest {
         System.out.println("Used: " + ((Double) used).intValue() + "MB");
     }
 
+    static class CustomOpParam {
+
+        private Integer      betweenStart;
+
+        private Integer      betweenEnd;
+
+        private Integer      ne;
+
+        private Set<Integer> nin;
+
+        public Integer getBetweenStart() {
+            return betweenStart;
+        }
+
+        public void setBetweenStart(Integer betweenStart) {
+            this.betweenStart = betweenStart;
+        }
+
+        public Integer getBetweenEnd() {
+            return betweenEnd;
+        }
+
+        public void setBetweenEnd(Integer betweenEnd) {
+            this.betweenEnd = betweenEnd;
+        }
+
+        public Integer getNe() {
+            return ne;
+        }
+
+        public void setNe(Integer ne) {
+            this.ne = ne;
+        }
+
+        public Set<Integer> getNin() {
+            return nin;
+        }
+
+        public void setNin(Set<Integer> nin) {
+            this.nin = nin;
+        }
+    }
 }

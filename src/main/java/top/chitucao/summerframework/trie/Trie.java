@@ -1,7 +1,6 @@
 package top.chitucao.summerframework.trie;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import top.chitucao.summerframework.trie.query.Aggregations;
@@ -120,27 +119,27 @@ public interface Trie<T> {
      * @param <R>       字段数据类型
      * @return          该字段所有字典值
      */
-    <R> Set<R> dictValues(String property, Number... dictKeys);
+    <R> Set<R> dictValues(String property, Object... dictKeys);
 
-    /**
-     * 所有字段的字典大小
-     * 可以在配合压缩数据的时候使用，一般是字典值较小的字段放在前面压缩效率更高，整体可以认为是一个梯形，下底是固定长度，所以上底较小面积最小
-     *
-     * @return  每个字段的字典大小  
-     */
-    Map<String, Integer> dictSizes();
+    //    /**
+    //     * 所有字段的字典大小
+    //     * 可以在配合压缩数据的时候使用，一般是字典值较小的字段放在前面压缩效率更高，整体可以认为是一个梯形，下底是固定长度，所以上底较小面积最小
+    //     *
+    //     * @return  每个字段的字典大小  
+    //     */
+    //    Map<String, Integer> dictSizes();
 
-    /**
-     * 序列化
-     *
-     * @return 字节数组
-     */
-    byte[] serialize();
-
-    /**
-     * 反序列化
-     *
-     * @param bytes 字节数组
-     */
-    void deserialize(byte[] bytes);
+    //    /**
+    //     * 序列化
+    //     *
+    //     * @return 字节数组
+    //     */
+    //    byte[] serialize();
+    //
+    //    /**
+    //     * 反序列化
+    //     *
+    //     * @param bytes 字节数组
+    //     */
+    //    void deserialize(byte[] bytes);
 }

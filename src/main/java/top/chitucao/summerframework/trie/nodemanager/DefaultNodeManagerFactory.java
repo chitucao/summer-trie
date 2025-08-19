@@ -1,19 +1,18 @@
 package top.chitucao.summerframework.trie.nodemanager;
 
-import top.chitucao.summerframework.trie.configuration.Configuration;
-import top.chitucao.summerframework.trie.configuration.property.Property;
-
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.Optional;
+
+import top.chitucao.summerframework.trie.configuration.Configuration;
+import top.chitucao.summerframework.trie.configuration.property.Property;
 
 /**
  * 默认节点管理器工厂实现
  *
  * @author chitucao
  */
-public class DefaultNodeManagerFactory<T> implements NodeManagerFactory<T> {
+public class DefaultNodeManagerFactory implements NodeManagerFactory {
 
     private final Configuration configuration;
 
@@ -21,16 +20,16 @@ public class DefaultNodeManagerFactory<T> implements NodeManagerFactory<T> {
         this.configuration = configuration;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes"})
     @Override
-    public LinkedList<NodeManager<T, ?>> createNodeManagers() {
+    public LinkedList<NodeManager> createNodeManagers() {
         Collection<Property> properties = configuration.getProperties();
-        LinkedList<NodeManager<T, ?>> nodeManagers = new LinkedList<>();
-        for (Property<T, ?> property : properties) {
-            nodeManagers.add(new DefaultNodeManager<>(property));
+        LinkedList<NodeManager> nodeManagers = new LinkedList<>();
+        for (Property<?, ?, ?> property : properties) {
+            nodeManagers.add(new DefaultNodeManager(property));
         }
         nodeManagers.sort(Comparator.comparing(m -> m.property().level()));
-        NodeManager<T, ?> tail = nodeManagers.get(0);
+        NodeManager tail = nodeManagers.get(0);
         for (int i = 1; i < nodeManagers.size(); i++) {
             DefaultNodeManager tail1 = (DefaultNodeManager) tail;
             DefaultNodeManager cur1 = (DefaultNodeManager) nodeManagers.get(i);

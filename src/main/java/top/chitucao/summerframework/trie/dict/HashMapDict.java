@@ -8,24 +8,25 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 基于两个HashMap的字典实现
  *
- * @author chitucao
+ * @param <R>   字段值
+ * @param <K>   树节点值
  */
-public class HashMapDict<R> implements Dict<R> {
+public class HashMapDict<R, K> implements Dict<R, K> {
 
-    protected Map<Number, R>       dict;
+    protected Map<K, R>       dict;
 
-    protected Map<R, Number>       indexer;
+    protected Map<R, K>       indexer;
 
-    protected Map<Number, Integer> counter;
+    protected Map<K, Integer> counter;
 
     /** 在字典值数量为0的时候是否删除该字典，如果是定时重建，并且快速删除，则没必要开启这个选项，开启了可以稍微节省点空间 */
-    protected boolean              removeDictIfNonCount;
+    protected boolean         removeDictIfNonCount;
 
     public HashMapDict() {
         this.dict = new ConcurrentHashMap<>();
         this.indexer = new ConcurrentHashMap<>();
         this.counter = new ConcurrentHashMap<>();
-        this.removeDictIfNonCount = false;
+        this.removeDictIfNonCount = true;
     }
 
     /**
@@ -35,71 +36,104 @@ public class HashMapDict<R> implements Dict<R> {
         this.dict = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
         this.indexer = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
         this.counter = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
-        this.removeDictIfNonCount = false;
+        this.removeDictIfNonCount = true;
     }
 
+    /**
+     * 字典数量
+     *
+     * @return 字典数量
+     */
     @Override
-    public int getSize() {
+    public int size() {
         return dict.size();
     }
 
+    /**
+     * 字典键值表
+     *
+     * @return 字典键值表
+     */
     @Override
-    public Set<R> dictValues() {
-        return indexer.keySet();
-    }
-
-    @Override
-    public Map<Number, R> dictAll() {
+    public Map<K, R> dict() {
         return dict;
     }
 
-    @Override
-    public Number getDictKey(R r) {
-        return indexer.get(r);
+    /**
+     * 所有字段值
+     *
+     * @return 所有字段值
+     */
+    public Set<R> fieldValues() {
+        return indexer.keySet();
     }
 
-    @Override
-    public R getDictValue(Number dictKey) {
-        return dict.get(dictKey);
+    /**
+     * 新增一个字典
+     *
+     * @param nodeKey       树节点值
+     * @param fieldValue    字段值
+     */
+    public void put(K nodeKey, R fieldValue) {
+        indexer.put(fieldValue, nodeKey);
+        dict.put(nodeKey, fieldValue);
+        counter.put(nodeKey, counter.getOrDefault(nodeKey, 0) + 1);
     }
 
-    @Override
-    public void putDict(Number dictKey, R dictValue) {
-        indexer.put(dictValue, dictKey);
-        dict.put(dictKey, dictValue);
-        counter.put(dictKey, counter.getOrDefault(dictKey, 0) + 1);
+    /**
+     * 根据字段值查询对应的树节点值
+     *
+     * @param fieldValue    字段值
+     * @return              树节点值
+     */
+    public K getNodeKey(R fieldValue) {
+        return indexer.get(fieldValue);
     }
 
-    @Override
-    public void putDictObj(Number dictKey, Object dictValue) {
-        @SuppressWarnings("unchecked")
-        R val = (R) dictValue;
-        indexer.put(val, dictKey);
-        dict.put(dictKey, val);
-        counter.put(dictKey, counter.getOrDefault(dictKey, 0) + 1);
+    /**
+     * 根据树节点值查询字段值
+     *
+     * @param nodeKey   树节点值
+     * @return          字段值
+     */
+    public R getFieldValue(K nodeKey) {
+        return dict.get(nodeKey);
     }
 
-    @Override
-    public boolean containsDictValue(R r) {
-        return indexer.containsKey(r);
+    /**
+     * 是否包含某个字段值
+     *
+     * @param fieldValue    字段值
+     * @return              是否包含某个字段值
+     */
+    public boolean containsFieldValue(R fieldValue) {
+        return indexer.containsKey(fieldValue);
     }
 
-    @Override
-    public void decrDictCount(Number dictKey, int count) {
-        counter.put(dictKey, counter.get(dictKey) - count);
-        if (removeDictIfNonCount && Objects.equals(counter.get(dictKey), 0)) {
-            removeDictKey(dictKey);
+    /**
+     * 减少一个字典key的数量
+     *
+     * @param nodeKey   树节点值
+     * @param count     减少的数量
+     */
+    public void decrNodeKeyCount(K nodeKey, int count) {
+        if (!counter.containsKey(nodeKey)) {
+            return;
+        }
+        counter.put(nodeKey, counter.get(nodeKey) - count);
+        if (removeDictIfNonCount && Objects.equals(counter.get(nodeKey), 0)) {
+            removeNodeKey(nodeKey);
         }
     }
 
-    @Override
-    public void removeDictKey(Number dictKey) {
-        indexer.remove(dict.get(dictKey));
-        dict.remove(dictKey);
-        counter.remove(dictKey);
-    }
-
-    public void setRemoveDictIfNonCount(boolean removeDictIfNonCount) {
-        this.removeDictIfNonCount = removeDictIfNonCount;
+    /**
+     * 删除一个字典key
+     *
+     * @param nodeKey   字典key
+     */
+    public void removeNodeKey(K nodeKey) {
+        indexer.remove(dict.get(nodeKey));
+        dict.remove(nodeKey);
+        counter.remove(nodeKey);
     }
 }

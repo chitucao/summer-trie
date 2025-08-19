@@ -30,7 +30,7 @@ public class Configuration {
 
     public Configuration() {
         this.level = 0;
-        this.useFastErase = false;
+        this.useFastErase = true;
     }
 
     @SuppressWarnings("rawtypes")

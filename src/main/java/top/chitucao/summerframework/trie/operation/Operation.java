@@ -1,11 +1,14 @@
 package top.chitucao.summerframework.trie.operation;
 
+import top.chitucao.summerframework.trie.query.Criteria;
+
 /**
  * 操作类型
  * -1.这里提供了一些常用的操作，提供的操作类型主要是考虑两个方面：
  *  -1.1 trie实现起来效率比较高；
  *  -1.2 业务常用的；
- * -2.当然也可以支持注册自定义的操作类型（$xxx这样），这个后面会支持；
+ * -2.当然也可以支持注册自定义的操作类型（全局生效的,$$xxx这样，使用OperationRegistry注册）；
+ * -3.还可以执行自定义函数{@link Criteria#func(Func)}；
  *
  * @author chitucao(zhonggang.zhu)
  * @version Id: Operation.java, v 0.1 2025-08-11 10:53 chitucao Exp $$
@@ -33,7 +36,10 @@ public enum Operation {
                        /** 包含 */
                        IN("$in"),
                        /** 不包含 */
-                       NIN("$nin");
+                       NIN("$nin"),
+
+                       /** 自定义函数 */
+                       FUNC("$func");
 
     private final String value;
 

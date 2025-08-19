@@ -25,10 +25,6 @@ public class NumberAdder {
         KEY_MAPPER_MAP.put(DictKeyType.LONG, e -> e);
     }
 
-    public NumberAdder() {
-        this.KEY_MAPPER = KEY_MAPPER_MAP.get(DictKeyType.LONG);
-    }
-
     public NumberAdder(DictKeyType keyType) {
         this.KEY_MAPPER = KEY_MAPPER_MAP.get(keyType);
     }

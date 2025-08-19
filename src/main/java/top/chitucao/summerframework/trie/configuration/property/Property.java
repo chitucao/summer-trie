@@ -1,22 +1,31 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
+import top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty;
 import top.chitucao.summerframework.trie.dict.Dict;
 import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
  * 节点属性
- * @param <T>   实体
- * @param <R>   字段值（字段值是实际存在节点中的数据）
+ * @param <T>   对象实体
+ * @param <R>   字段值
+ * @param <K>   树节点关键字
  *
  * @author chitucao
  */
-public interface Property<T, R> {
+public interface Property<T, R, K> {
     /**
-     * 属性唯一名称
+     * 名称，全局唯一
      * 
-     * @return  属性唯一名称
+     * @return  名称
      */
     String name();
+
+    /**
+     * 节点类型
+     *
+     * @return  节点类型
+     */
+    NodeType nodeType();
 
     /**
      * 层级
@@ -25,43 +34,59 @@ public interface Property<T, R> {
      */
     int level();
 
+    /**
+     * 设置层级
+     *
+     * @param level 层级
+     */
     void setLevel(int level);
 
     /**
-     * 节点类型
-     * 
-     * @return  节点类型
-     */
-    NodeType nodeType();
-
-    /**
-     * 指定将实体转换成字段值的映射关系
-     * 这里既可以指定一个具体字段，也可以返回处理后的字段，比如两个日期组成一个日期范围，两个价格组成一个价格区间
+     * 从对象实体获取字段值
+     * -1.通常情况是指定对象的原始字段，也可以返回合并或者处理过的字段，比如两个日期组成一个日期范围，两个价格组成一个价格区间
      *
-     * @param t     实体
-     * @return      字段值
+     * @param object    对象实体
+     * @return          字段值
      */
-    R mappingValue(T t);
+    R mappingFieldValue(T object);
 
     /**
-     * 指定将字段值转成成字典key的映射关系
+     * 将字段值转换为树节点关键字
      *
-     * @param r     字段值
-     * @return      字典key
+     * @param field     字段值
+     * @return          树节点关键字
      */
-    Number mappingDictKey(R r);
+    K mappingNodeKey(R field);
 
     /**
-     * 根据字段值查询字典key
-     * @param r     字段值
-     * @return      字典key
-     */
-    Number getDictKey(R r);
-
-    /**
-     * 获取字段字典
+     * 将字段值转换为树节点关键字
+     * -1.如果当前字典没有该关键字，则新增一个返回，适用于{@link AutoMappingProperty}
      *
-     * @return  字段字典
+     * @param field     字段值
+     * @return          树节点关键字
      */
-    Dict<R> dict();
+    K mappingOrCreateNodeKey(R field);
+
+    /**
+     * 将树节点关键字转换为字段值
+     *
+     * @param nodeKey       树节点关键字
+     * @return              字段值
+     */
+    R nodeKey2FieldValue(K nodeKey);
+
+    /**
+     * 是否是字典属性
+     *
+     * @return  是否是字典属性
+     */
+    boolean isDictProperty();
+
+    /**
+     * 获取字典
+     * -1.仅节点是字典属性的节点时可用
+     *
+     * @return  字典
+     */
+    Dict<R, K> getDict();
 }

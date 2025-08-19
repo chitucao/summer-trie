@@ -5,91 +5,79 @@ import java.util.Set;
 
 /**
  * 字段值字典
- * -1.如果字段本身就是数字，也可以考虑不用字典，节省空间；
- * -2.可以通过这个对象直接拿到某个字段的所有有效值，比如限制前端下拉框的有效值；
- * -3.为什么要存在这样一个字典？     比起在节点中直接存字段值本身，将字段映射成数字可能节省空间一点；
- * -4.为什么字典key用number类型？   实现简单，hashCode 和 equals高效一点，也有一部分原因是现有实现时偷懒了，是可以将dictKey抽象一下的；
- * -5.针对某个字段的字典，也可以被多个前缀树共享，进一步节省空间；
- * -6.如果字段有枚举，可以直接用现有的枚举实现这个字典；
+ * @param <R>   字段值
+ * @param <K>   树节点值
  *
  * @author chitucao
  */
-public interface Dict<R> {
+public interface Dict<R, K> {
 
     /**
      * 字典数量
      *
      * @return 字典数量
      */
-    int getSize();
+    int size();
 
     /**
-     * 所有字典值
+     * 字典键值表
      *
-     * @return 所有字典值
+     * @return 字典键值表
      */
-    Set<R> dictValues();
+    Map<K, R> dict();
 
     /**
-     * 所有字典键值
+     * 所有字段值
      *
-     * @return  所有字典键值
+     * @return 所有字段值
      */
-    Map<Number, R> dictAll();
-
-    /**
-     * 查询字段值对应的字典key
-     *
-     * @param r 字段值
-     * @return 字典key
-     */
-    Number getDictKey(R r);
-
-    /**
-     * 查询字典key对应的字段值
-     *
-     * @param dictKey 字典key
-     * @return 字段值
-     */
-    R getDictValue(Number dictKey);
+    Set<R> fieldValues();
 
     /**
      * 新增一个字典
      *
-     * @param dictKey   字典key
-     * @param dictValue 字段值
+     * @param nodeKey       树节点值
+     * @param fieldValue    字段值
      */
-    void putDict(Number dictKey, R dictValue);
+    void put(K nodeKey, R fieldValue);
 
     /**
-     * 新增一个字典
+     * 根据字段值查询对应的树节点值
      *
-     * @param dictKey   字典key
-     * @param dictValue 字段值
+     * @param fieldValue    字段值
+     * @return              树节点值
      */
-    void putDictObj(Number dictKey, Object dictValue);
+    K getNodeKey(R fieldValue);
 
     /**
-     * 是否包含某个字段
+     * 根据树节点值查询字段值
      *
-     * @param r 字段
-     * @return 是否包含某个字段
+     * @param nodeKey   树节点值
+     * @return          字段值
      */
-    boolean containsDictValue(R r);
+    R getFieldValue(K nodeKey);
 
     /**
-     * 减少一个字典key的数量
+     * 是否包含某个字段值
+     *
+     * @param fieldValue    字段值
+     * @return              是否包含某个字段值
+     */
+    boolean containsFieldValue(R fieldValue);
+
+    /**
+     * 减少一个字典key对应的子节点数量
      * 
-     * @param dictKey   字典key
+     * @param nodeKey   树节点值
      * @param count     减少的数量
      */
-    void decrDictCount(Number dictKey, int count);
+    void decrNodeKeyCount(K nodeKey, int count);
 
     /**
      * 删除一个字典key
      *
-     * @param dictKey   字典key
+     * @param nodeKey   字典key
      */
-    void removeDictKey(Number dictKey);
+    void removeNodeKey(K nodeKey);
 
 }

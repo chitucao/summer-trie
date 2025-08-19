@@ -1,9 +1,9 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
+import java.util.Collections;
 import java.util.function.Function;
 
 import top.chitucao.summerframework.trie.dict.Dict;
-import top.chitucao.summerframework.trie.dict.HashMapDict;
 import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
@@ -11,7 +11,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
  *
  * @author chitucao
  */
-public abstract class AbstractProperty<T, R> implements Property<T, R> {
+public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
 
     /** 属性唯一名称 */
     protected final String   name;
@@ -22,34 +22,16 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     /** 节点类型 */
     protected final NodeType nodeType;
 
-    /** 字段字典 */
-    protected final Dict<R>  dict;
-
     /** 指定实体和字段值的映射关系 */
     private Function<T, R>   propertyMapper;
 
-    public AbstractProperty(String name) {
-        this.name = name;
-        this.nodeType = NodeType.HASH_MAP;
-        this.dict = new HashMapDict<>();
-    }
+    /** 是否是用到字典的节点属性 */
+    private final boolean    isDictProperty;
 
-    public AbstractProperty(String name, NodeType nodeType) {
+    public AbstractProperty(String name, NodeType nodeType, boolean isDictProperty) {
         this.name = name;
         this.nodeType = nodeType;
-        this.dict = new HashMapDict<>();
-    }
-
-    public AbstractProperty(String name, Dict<R> dict) {
-        this.name = name;
-        this.nodeType = NodeType.HASH_MAP;
-        this.dict = dict;
-    }
-
-    public AbstractProperty(String name, NodeType nodeType, Dict<R> dict) {
-        this.name = name;
-        this.nodeType = nodeType;
-        this.dict = dict;
+        this.isDictProperty = isDictProperty;
     }
 
     @Override
@@ -73,13 +55,13 @@ public abstract class AbstractProperty<T, R> implements Property<T, R> {
     }
 
     @Override
-    public R mappingValue(T t) {
+    public R mappingFieldValue(T t) {
         return propertyMapper.apply(t);
     }
 
     @Override
-    public Dict<R> dict() {
-        return dict;
+    public boolean isDictProperty() {
+        return isDictProperty;
     }
 
     public void setPropertyMapper(Function<T, R> propertyMapper) {

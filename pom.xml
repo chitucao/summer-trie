@@ -6,7 +6,7 @@
 
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.1.0.RELEASE</version>
 
     <packaging>jar</packaging>
 
@@ -21,6 +21,9 @@
         1.0.3.RELEASE 序列化方法优化
         1.0.4.RELEASE 代码优化
         1.0.5.RELEASE 项目依赖优化，支持零依赖
+        1.0.7.RELEASE 支持扩展自定义操作，优化查询api
+        1.0.8.RELEASE 支持自定义函数
+        1.1.0.RELEASE 支持字典树存储数据本身，提供更多的节点属性类型
     </description>
 
     <developers>
@@ -70,30 +73,26 @@
     </properties>
 
     <dependencies>
-        <!--序列化相关的包（可选的，如果不使用序列化功能可以不引入）-->
+        <!--序列化相关的包-->
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>${protobuf.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <!--测试相关的包-->
@@ -120,28 +119,28 @@
             </extension>
         </extensions>
         <plugins>
-                        <plugin>
-                            <groupId>org.xolstice.maven.plugins</groupId>
-                            <artifactId>protobuf-maven-plugin</artifactId>
-                            <version>0.6.1</version>
-                            <configuration>
-                                <protocArtifact>
-                                    com.google.protobuf:protoc:3.7.1:exe:${os.detected.classifier}
-                                </protocArtifact>
-                                <pluginId>grpc-java</pluginId>
-                                <pluginArtifact>
-                                    io.grpc:protoc-gen-grpc-java:1.21.0:exe:${os.detected.classifier}
-                                </pluginArtifact>
-                            </configuration>
-                            <executions>
-                                <execution>
-                                    <goals>
-                                        <goal>compile</goal>
-                                        <goal>compile-custom</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
+            <!--                        <plugin>-->
+            <!--                            <groupId>org.xolstice.maven.plugins</groupId>-->
+            <!--                            <artifactId>protobuf-maven-plugin</artifactId>-->
+            <!--                            <version>0.6.1</version>-->
+            <!--                            <configuration>-->
+            <!--                                <protocArtifact>-->
+            <!--                                    com.google.protobuf:protoc:3.7.1:exe:${os.detected.classifier}-->
+            <!--                                </protocArtifact>-->
+            <!--                                <pluginId>grpc-java</pluginId>-->
+            <!--                                <pluginArtifact>-->
+            <!--                                    io.grpc:protoc-gen-grpc-java:1.21.0:exe:${os.detected.classifier}-->
+            <!--                                </pluginArtifact>-->
+            <!--                            </configuration>-->
+            <!--                            <executions>-->
+            <!--                                <execution>-->
+            <!--                                    <goals>-->
+            <!--                                        <goal>compile</goal>-->
+            <!--                                        <goal>compile-custom</goal>-->
+            <!--                                    </goals>-->
+            <!--                                </execution>-->
+            <!--                            </executions>-->
+            <!--                        </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
