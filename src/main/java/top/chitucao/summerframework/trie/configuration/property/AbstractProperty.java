@@ -1,9 +1,7 @@
 package top.chitucao.summerframework.trie.configuration.property;
 
-import java.util.Collections;
 import java.util.function.Function;
 
-import top.chitucao.summerframework.trie.dict.Dict;
 import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
@@ -23,7 +21,7 @@ public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
     protected final NodeType nodeType;
 
     /** 指定实体和字段值的映射关系 */
-    private Function<T, R>   propertyMapper;
+    private Function<T, R>   object2FieldMapper;
 
     /** 是否是用到字典的节点属性 */
     private final boolean    isDictProperty;
@@ -56,7 +54,7 @@ public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
 
     @Override
     public R mappingFieldValue(T t) {
-        return propertyMapper.apply(t);
+        return object2FieldMapper.apply(t);
     }
 
     @Override
@@ -64,7 +62,7 @@ public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
         return isDictProperty;
     }
 
-    public void setPropertyMapper(Function<T, R> propertyMapper) {
-        this.propertyMapper = propertyMapper;
+    public void setObject2FieldMapper(Function<T, R> object2FieldMapper) {
+        this.object2FieldMapper = object2FieldMapper;
     }
 }

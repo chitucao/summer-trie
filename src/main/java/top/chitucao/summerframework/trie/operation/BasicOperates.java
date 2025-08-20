@@ -121,10 +121,12 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings("unchecked")
-        List<Number> range = (List<Number>) key;
-        Number left = range.get(0);
-        Number right = range.get(1);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<Comparable> range = (List<Comparable>) key;
+        @SuppressWarnings("rawtypes")
+        Comparable left = range.get(0);
+        @SuppressWarnings("rawtypes")
+        Comparable right = range.get(1);
 
         if (Objects.isNull(left) && Objects.isNull(right)) {
             return childMap;
@@ -132,7 +134,8 @@ public class BasicOperates {
 
         Map<Object, Node<?>> result = new HashMap<>();
         if (Objects.nonNull(left) && Objects.nonNull(right)) {
-            if (left.longValue() > right.longValue()) {
+            //noinspection unchecked
+            if (left.compareTo(right) > 0) {
                 return childMap;
             }
             for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
@@ -295,7 +298,7 @@ public class BasicOperates {
             return childMap;
         }
         //noinspection unchecked
-        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).headMap((Number) key, true));
+        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).headMap(key, true));
     };
 
     // 区间
@@ -305,15 +308,18 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings("unchecked")
-        List<Number> range = (List<Number>) key;
-        Number left = range.get(0);
-        Number right = range.get(1);
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        List<Comparable> range = (List<Comparable>) key;
+        @SuppressWarnings("rawtypes")
+        Comparable left = range.get(0);
+        @SuppressWarnings("rawtypes")
+        Comparable right = range.get(1);
 
         if (Objects.isNull(left) && Objects.isNull(right)) {
             return new TreeMap<>(childMap);
         } else if (Objects.nonNull(left) && Objects.nonNull(right)) {
-            if (left.longValue() > right.longValue()) {
+            //noinspection unchecked
+            if (left.compareTo(right) > 0) {
                 return new TreeMap<>();
             }
             //noinspection unchecked

@@ -8,10 +8,8 @@ import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
  * 自动建立映射关系的节点属性
- * -1.将字段值通过自增的方式映射为一个数字，将该数字存在树节点上；
- * -2.适用于字段值占用空间比较大，重复度比较高，需要进行数据压缩的场景；
- * -3.确定好字段值的范围后，建议优先使用占用空间比较小的数据结构 {@link Byte,Short,Integer,Long}
- * 
+ * -将字段值通过自增的方式映射为一个数字，将该数字存在树节点上；
+ * -适用于字段值占用空间比较大，重复度比较高，需要进行数据压缩的场景；
  * @author chitucao
  */
 public class AutoMappingProperty<T, R> extends AbstractDictProperty<T, R, Number> {

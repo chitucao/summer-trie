@@ -25,10 +25,10 @@ import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.json.JSONUtil;
 import junit.framework.TestCase;
 import top.chitucao.summerframework.trie.configuration.Configuration;
-import top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty;
 import top.chitucao.summerframework.trie.configuration.property.DictKeyType;
-import top.chitucao.summerframework.trie.configuration.property.impl.OneWayMappingProperty;
 import top.chitucao.summerframework.trie.configuration.property.Property;
+import top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty;
+import top.chitucao.summerframework.trie.configuration.property.impl.OneWayMappingProperty;
 import top.chitucao.summerframework.trie.flight.FlightResourceDO;
 import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
 import top.chitucao.summerframework.trie.node.Node;
@@ -184,7 +184,7 @@ public class TrieTest {
         long remainSize = dataList.size() - eraseCount;
         int trieSize = trie.getSize();
 
-        if(remainSize != trieSize){
+        if (remainSize != trieSize) {
             System.out.println(111);
         }
 
@@ -902,20 +902,20 @@ public class TrieTest {
         Configuration configuration = new Configuration();
         // 出发日期
         OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
-        depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.setObject2FieldMapper(FlightResourceDO::getDepartureTime);
+        depDateProperty.setField2NodeKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         configuration.addProperty(depDateProperty);
         // 出发城市code
         AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
-        depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+        depCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getDepartureCity);
         configuration.addProperty(depCityCodeProperty);
         // 抵达城市code
         AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
-        arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+        arrCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getArrivalCity);
         configuration.addProperty(arrCityCodeProperty);
         // 数据
         AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
-        dataProperty.setPropertyMapper(Function.identity());
+        dataProperty.setObject2FieldMapper(Function.identity());
         configuration.addProperty(dataProperty);
         // 插入数据
         Trie<FlightResourceDO> trie = new MapTrie<>(configuration);
@@ -975,17 +975,17 @@ public class TrieTest {
         // 为什么将索引树和字典分离，是因为有时候想为一份数据建立多个索引，那么这多个索引是可以复用同一份字典数据的，可以节省空间
         // 出发日期
         OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
-        depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.setObject2FieldMapper(FlightResourceDO::getDepartureTime);
+        depDateProperty.setField2NodeKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         // 出发城市code
         AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
-        depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+        depCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getDepartureCity);
         // 抵达城市code
         AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
-        arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+        arrCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getArrivalCity);
         // 数据
         AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
-        dataProperty.setPropertyMapper(Function.identity());
+        dataProperty.setObject2FieldMapper(Function.identity());
 
         // 假如第一个业务需要按照出发日期+出发城市+抵达城市+数据组织数据
         Configuration configuration1 = new Configuration();
@@ -1052,36 +1052,36 @@ public class TrieTest {
 
         // 价格
         OneWayMappingProperty<TrainSourceDO, Double, Integer> priceProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
-        priceProperty.setPropertyMapper(TrainSourceDO::getMinRealPrice);
-        priceProperty.field2NodeKey(r -> ((Double) (r * 100)).intValue());
+        priceProperty.setObject2FieldMapper(TrainSourceDO::getMinRealPrice);
+        priceProperty.setField2NodeKeyMapper(r -> ((Double) (r * 100)).intValue());
         configuration.addProperty(priceProperty);
 
         // 出发城市id
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_DEP_CITY_ID);
-        depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.field2NodeKey(Integer::valueOf);
+        depCityIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureCityId);
+        depCityIdProperty.setField2NodeKeyMapper(Integer::valueOf);
         configuration.addProperty(depCityIdProperty);
 
         // 抵达城市id
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.INDEX_ARR_CITY_ID);
-        arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.field2NodeKey(Integer::valueOf);
+        arrCityIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalCityId);
+        arrCityIdProperty.setField2NodeKeyMapper(Integer::valueOf);
         configuration.addProperty(arrCityIdProperty);
 
         // 车次类型
         AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>(TrainTrieIndexNames.INDEX_TRAIN_TYPE, DictKeyType.BYTE);
-        trainTypeProperty.setPropertyMapper(TrainSourceDO::getTrainType);
+        trainTypeProperty.setObject2FieldMapper(TrainSourceDO::getTrainType);
         configuration.addProperty(trainTypeProperty);
 
         // 坐席类型
         AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>(TrainTrieIndexNames.INDEX_SEAT_CLASS, DictKeyType.BYTE);
-        seatClassProperty.setPropertyMapper(TrainSourceDO::getSeatClass);
+        seatClassProperty.setObject2FieldMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
 
         // 数据
         OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>(TrainTrieIndexNames.DATA);
-        dataProperty.setPropertyMapper(Function.identity());
-        dataProperty.field2NodeKey(TrainSourceDO::getId);
+        dataProperty.setObject2FieldMapper(Function.identity());
+        dataProperty.setField2NodeKeyMapper(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);
         return configuration;
     }
@@ -1091,35 +1091,35 @@ public class TrieTest {
 
         // 出发日期
         OneWayMappingProperty<FlightResourceDO, Date, Integer> depDateProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_DATE, NodeType.TREE_MAP);
-        depDateProperty.setPropertyMapper(FlightResourceDO::getDepartureTime);
-        depDateProperty.field2NodeKey(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
+        depDateProperty.setObject2FieldMapper(FlightResourceDO::getDepartureTime);
+        depDateProperty.setField2NodeKeyMapper(r -> Integer.parseInt(DateUtil.format(r, DatePattern.PURE_DATE_PATTERN)));
         configuration.addProperty(depDateProperty);
 
         // 价格
         OneWayMappingProperty<FlightResourceDO, Integer, Integer> priceProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_PRICE, NodeType.TREE_MAP);
-        priceProperty.setPropertyMapper(FlightResourceDO::getLcp);
-        priceProperty.field2NodeKey(r -> r);
+        priceProperty.setObject2FieldMapper(FlightResourceDO::getLcp);
+        priceProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(priceProperty);
 
         // 出发城市code
         AutoMappingProperty<FlightResourceDO, String> depCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_DEP_CITY_CODE, DictKeyType.INT);
-        depCityCodeProperty.setPropertyMapper(FlightResourceDO::getDepartureCity);
+        depCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getDepartureCity);
         configuration.addProperty(depCityCodeProperty);
 
         // 抵达城市code
         AutoMappingProperty<FlightResourceDO, String> arrCityCodeProperty = new AutoMappingProperty<>(FlightTrieIndexNames.INDEX_ARR_CITY_CODE, DictKeyType.INT);
-        arrCityCodeProperty.setPropertyMapper(FlightResourceDO::getArrivalCity);
+        arrCityCodeProperty.setObject2FieldMapper(FlightResourceDO::getArrivalCity);
         configuration.addProperty(arrCityCodeProperty);
 
         // 舱等类型
         OneWayMappingProperty<FlightResourceDO, Integer, Integer> cabinClassProperty = new OneWayMappingProperty<>(FlightTrieIndexNames.INDEX_CABIN_TYPE, NodeType.TREE_MAP);
-        cabinClassProperty.setPropertyMapper(FlightResourceDO::getCabinType);
-        cabinClassProperty.field2NodeKey(r -> r);
+        cabinClassProperty.setObject2FieldMapper(FlightResourceDO::getCabinType);
+        cabinClassProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(cabinClassProperty);
 
         // 数据
         AutoMappingProperty<FlightResourceDO, FlightResourceDO> dataProperty = new AutoMappingProperty<>(FlightTrieIndexNames.DATA);
-        dataProperty.setPropertyMapper(Function.identity());
+        dataProperty.setObject2FieldMapper(Function.identity());
         configuration.addProperty(dataProperty);
 
         return configuration;
@@ -1131,12 +1131,12 @@ public class TrieTest {
         for (Field field : fields) {
             if (Number.class.isAssignableFrom(field.getType())) {
                 OneWayMappingProperty customizedProperty = new OneWayMappingProperty<>(field.getName(), NodeType.TREE_MAP);
-                customizedProperty.setPropertyMapper(e -> ReflectUtil.getFieldValue(e, field));
-                customizedProperty.field2NodeKey(r -> r);
+                customizedProperty.setObject2FieldMapper(e -> ReflectUtil.getFieldValue(e, field));
+                customizedProperty.setField2NodeKeyMapper(r -> r);
                 configuration.addProperty(customizedProperty);
             } else {
                 AutoMappingProperty simpleProperty = new AutoMappingProperty<>(field.getName());
-                simpleProperty.setPropertyMapper(e -> ReflectUtil.getFieldValue(e, field));
+                simpleProperty.setObject2FieldMapper(e -> ReflectUtil.getFieldValue(e, field));
                 configuration.addProperty(simpleProperty);
             }
         }
@@ -1147,20 +1147,20 @@ public class TrieTest {
         Configuration configuration = new Configuration();
         // 出发城市
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.TREE_MAP);
-        depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.field2NodeKey(r -> r);
+        depCityIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureCityId);
+        depCityIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 抵达城市
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>("arrCityId", NodeType.TREE_MAP);
-        arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.field2NodeKey(r -> r);
+        arrCityIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalCityId);
+        arrCityIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 价格
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("price", NodeType.TREE_MAP);
-        arrDistrictIdProperty.setPropertyMapper(t -> ((Double) t.getMinRealPrice()).intValue());
-        arrDistrictIdProperty.field2NodeKey(r -> r);
+        arrDistrictIdProperty.setObject2FieldMapper(t -> ((Double) t.getMinRealPrice()).intValue());
+        arrDistrictIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
 
         return configuration;
@@ -1171,59 +1171,59 @@ public class TrieTest {
         configuration.setUseFastErase(true);
         // 出发城市
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.TREE_MAP);
-        depCityIdProperty.setPropertyMapper(TrainSourceDO::getDepartureCityId);
-        depCityIdProperty.field2NodeKey(r -> r);
+        depCityIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureCityId);
+        depCityIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(depCityIdProperty);
 
         // 出发地区
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> depDistrictIdProperty = new OneWayMappingProperty<>("depDistrictId", NodeType.TREE_MAP);
-        depDistrictIdProperty.setPropertyMapper(TrainSourceDO::getDepartureDistrictId);
-        depDistrictIdProperty.field2NodeKey(r -> r);
+        depDistrictIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureDistrictId);
+        depDistrictIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(depDistrictIdProperty);
 
         // 出发站点
         AutoMappingProperty<TrainSourceDO, String> departureStationCodeProperty = new AutoMappingProperty<>("departureStationCode", DictKeyType.INT);
-        departureStationCodeProperty.setPropertyMapper(TrainSourceDO::getDepartureStationCode);
+        departureStationCodeProperty.setObject2FieldMapper(TrainSourceDO::getDepartureStationCode);
         configuration.addProperty(departureStationCodeProperty);
 
         // 抵达城市
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrCityIdProperty = new OneWayMappingProperty<>("arrCityId", NodeType.TREE_MAP);
-        arrCityIdProperty.setPropertyMapper(TrainSourceDO::getArrivalCityId);
-        arrCityIdProperty.field2NodeKey(r -> r);
+        arrCityIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalCityId);
+        arrCityIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(arrCityIdProperty);
 
         // 抵达地区
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("arrDistrictId", NodeType.TREE_MAP);
-        arrDistrictIdProperty.setPropertyMapper(TrainSourceDO::getArrivalDistrictId);
-        arrDistrictIdProperty.field2NodeKey(r -> r);
+        arrDistrictIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalDistrictId);
+        arrDistrictIdProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(arrDistrictIdProperty);
 
         // 车次类型
         AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>("trainType", DictKeyType.BYTE);
-        trainTypeProperty.setPropertyMapper(TrainSourceDO::getTrainType);
+        trainTypeProperty.setObject2FieldMapper(TrainSourceDO::getTrainType);
         configuration.addProperty(trainTypeProperty);
 
         // 坐席类型
         AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>("seatClass", DictKeyType.BYTE);
-        seatClassProperty.setPropertyMapper(TrainSourceDO::getSeatClass);
+        seatClassProperty.setObject2FieldMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
 
         // 最低票价
         OneWayMappingProperty<TrainSourceDO, Integer, Integer> minRealPriceProperty = new OneWayMappingProperty<>("minRealPrice", NodeType.TREE_MAP);
-        minRealPriceProperty.setPropertyMapper(e -> Double.valueOf(e.getMinRealPrice()).intValue());
-        minRealPriceProperty.field2NodeKey(r -> r);
+        minRealPriceProperty.setObject2FieldMapper(e -> Double.valueOf(e.getMinRealPrice()).intValue());
+        minRealPriceProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(minRealPriceProperty);
 
         // id
         OneWayMappingProperty<TrainSourceDO, Long, Long> idProperty = new OneWayMappingProperty<>("id", NodeType.TREE_MAP);
-        idProperty.setPropertyMapper(TrainSourceDO::getId);
-        idProperty.field2NodeKey(r -> r);
+        idProperty.setObject2FieldMapper(TrainSourceDO::getId);
+        idProperty.setField2NodeKeyMapper(r -> r);
         configuration.addProperty(idProperty);
 
         // 数据
         OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>("data", NodeType.HASH_MAP);
-        dataProperty.setPropertyMapper(Function.identity());
-        dataProperty.field2NodeKey(TrainSourceDO::getId);
+        dataProperty.setObject2FieldMapper(Function.identity());
+        dataProperty.setField2NodeKeyMapper(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);
 
         return configuration;

@@ -39,7 +39,11 @@ public class OneWayMappingProperty<T, R, K> extends AbstractDictProperty<T, R, K
         return field2NodeKeyMapper.apply(field);
     }
 
-    public void field2NodeKey(Function<R, K> field2NodeKeyMapper) {
+    /**
+     * 设置字段值映射成树节点值的映射函数
+     * @param field2NodeKeyMapper   字段值映射成树节点值的映射函数
+     */
+    public void setField2NodeKeyMapper(Function<R, K> field2NodeKeyMapper) {
         this.field2NodeKeyMapper = field2NodeKeyMapper;
     }
 }

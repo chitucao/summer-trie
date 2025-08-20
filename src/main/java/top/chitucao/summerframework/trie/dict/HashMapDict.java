@@ -26,7 +26,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
         this.dict = new ConcurrentHashMap<>();
         this.indexer = new ConcurrentHashMap<>();
         this.counter = new ConcurrentHashMap<>();
-        this.removeDictIfNonCount = true;
+        this.removeDictIfNonCount = false;
     }
 
     /**
@@ -36,7 +36,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
         this.dict = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
         this.indexer = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
         this.counter = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
-        this.removeDictIfNonCount = true;
+        this.removeDictIfNonCount = false;
     }
 
     /**

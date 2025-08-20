@@ -50,11 +50,19 @@ public class MappingProperty<T, R, K> extends AbstractProperty<T, R, K> {
         throw new IllegalStateException("MappingProperty is not a dictProperty, propertyName: " + name);
     }
 
-    public void field2NodeKey(Function<R, K> field2NodeKeyMapper) {
+    /**
+     * 设置字段值映射成树节点值的映射函数
+     * @param field2NodeKeyMapper   字段值映射成树节点值的映射函数
+     */
+    public void setField2NodeKeyMapper(Function<R, K> field2NodeKeyMapper) {
         this.field2NodeKeyMapper = field2NodeKeyMapper;
     }
 
-    public void nodeKey2Field(Function<K, R> nodeKey2FieldMapper) {
+    /**
+     * 设置树节点值映射成字段值的映射函数
+     * @param nodeKey2FieldMapper   树节点值映射成字段值的映射函数
+     */
+    public void setNodeKey2FieldMapper(Function<K, R> nodeKey2FieldMapper) {
         this.nodeKey2FieldMapper = nodeKey2FieldMapper;
     }
 }
