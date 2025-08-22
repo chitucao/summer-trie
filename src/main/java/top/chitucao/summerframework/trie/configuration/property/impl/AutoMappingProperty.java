@@ -22,12 +22,27 @@ public class AutoMappingProperty<T, R> extends AbstractDictProperty<T, R, Number
     }
 
     public AutoMappingProperty(String name, DictKeyType dictKeyType) {
-        super(name, NodeType.HASH_MAP);
+        super(name, NodeType.HASH_MAP.name());
         this.dictKeyAdder = new NumberAdder(dictKeyType);
     }
 
-    public AutoMappingProperty(String name, Dict<R, Number> dict, DictKeyType dictKeyType) {
-        super(name, NodeType.HASH_MAP, dict);
+    public AutoMappingProperty(String name, DictKeyType dictKeyType, String NodeType) {
+        super(name, NodeType);
+        this.dictKeyAdder = new NumberAdder(dictKeyType);
+    }
+
+    public AutoMappingProperty(String name, DictKeyType dictKeyType, String NodeType, Dict<R, Number> dict) {
+        super(name, NodeType, dict);
+        this.dictKeyAdder = new NumberAdder(dictKeyType);
+    }
+
+    public AutoMappingProperty(String name, DictKeyType dictKeyType, NodeType NodeType) {
+        super(name, NodeType.name());
+        this.dictKeyAdder = new NumberAdder(dictKeyType);
+    }
+
+    public AutoMappingProperty(String name, DictKeyType dictKeyType, NodeType NodeType, Dict<R, Number> dict) {
+        super(name, NodeType.name(), dict);
         this.dictKeyAdder = new NumberAdder(dictKeyType);
     }
 

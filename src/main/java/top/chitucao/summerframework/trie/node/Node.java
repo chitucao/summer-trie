@@ -69,5 +69,5 @@ public interface Node<K> {
      *
      * @param key   字典key
      */
-    <K> void removeChild(K key);
+    void removeChild(K key);
 }

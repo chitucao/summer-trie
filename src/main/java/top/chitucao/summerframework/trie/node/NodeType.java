@@ -13,6 +13,12 @@ public enum NodeType {
                       TREE_MAP,
 
                       /** 哈希映射 */
-                      HASH_MAP;
+                      HASH_MAP,
+
+                      /** 树映射（每个节点有一个名称属性） */
+                      NAMED_TREE_MAP,
+
+                      /** 哈希映射（每个节点有一个名称属性） */
+                      NAMED_HASH_MAP;
 
 }

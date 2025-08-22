@@ -23,11 +23,15 @@ public class MappingProperty<T, R, K> extends AbstractProperty<T, R, K> {
     private Function<K, R> nodeKey2FieldMapper;
 
     public MappingProperty(String name) {
-        super(name, NodeType.HASH_MAP, false);
+        super(name, NodeType.HASH_MAP.name(), false);
+    }
+
+    public MappingProperty(String name, String nodeType) {
+        super(name, nodeType, false);
     }
 
     public MappingProperty(String name, NodeType nodeType) {
-        super(name, nodeType, false);
+        super(name, nodeType.name(), false);
     }
 
     @Override

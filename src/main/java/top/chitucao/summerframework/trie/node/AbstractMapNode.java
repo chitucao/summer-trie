@@ -98,10 +98,8 @@ public abstract class AbstractMapNode<K> implements Node<K> {
      *
      * @param key 字典key
      */
-    @SuppressWarnings("TypeParameterHidesVisibleType")
     @Override
-    public <K> void removeChild(K key) {
-        //noinspection SuspiciousMethodCalls
+    public void removeChild(K key) {
         children.remove(key);
     }
 }

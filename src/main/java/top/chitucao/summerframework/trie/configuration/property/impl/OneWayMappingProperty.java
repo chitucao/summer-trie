@@ -21,12 +21,20 @@ public class OneWayMappingProperty<T, R, K> extends AbstractDictProperty<T, R, K
         super(name);
     }
 
-    public OneWayMappingProperty(String name, NodeType nodeType) {
+    public OneWayMappingProperty(String name, String nodeType) {
         super(name, nodeType);
     }
 
-    public OneWayMappingProperty(String name, NodeType nodeType, Dict<R, K> dict) {
+    public OneWayMappingProperty(String name, String nodeType, Dict<R, K> dict) {
         super(name, nodeType, dict);
+    }
+
+    public OneWayMappingProperty(String name, NodeType nodeType) {
+        super(name, nodeType.name());
+    }
+
+    public OneWayMappingProperty(String name, NodeType nodeType, Dict<R, K> dict) {
+        super(name, nodeType.name(), dict);
     }
 
     @Override

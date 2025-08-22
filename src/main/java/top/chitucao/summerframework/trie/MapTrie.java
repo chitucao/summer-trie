@@ -52,6 +52,16 @@ public class MapTrie<T> implements Trie<T> {
     }
 
     /**
+     * 根节点
+     *
+     * @return 根节点
+     */
+    @Override
+    public Node<?> getRoot() {
+        return root;
+    }
+
+    /**
      * 深度
      * 从0开始，e.g. 8个字段，depth对应7
      *
@@ -559,7 +569,53 @@ public class MapTrie<T> implements Trie<T> {
 
         Map<?, ?> dictAll = property1.getDict().dict();
         //noinspection unchecked
-        return (Set<R>) Arrays.stream(dictKeys).map(dictAll::get).collect(Collectors.toSet());
+        return (Set<R>) Arrays.stream(dictKeys).map(dictAll::get).filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    /**
+     * 查询为树结构
+     * -1.返回查询结果为树结构
+     *
+     * @param criteria     查询条件
+     * @param aggregations 聚合条件
+     * @param properties   展示字段
+     * @return 树结构
+     */
+    @Override
+    public TreeNode queryAsTreeNode(Criteria criteria, Aggregations aggregations, String... properties) {
+        TreeNode root = new TreeNode("root");
+        if (properties == null || properties.length == 0) {
+            return root;
+        }
+
+        if (properties.length == 1) {
+            root.setChildren(propertySearch(criteria, properties[0]));
+            return root;
+        }
+
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
+        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, properties);
+        if (dataList.isEmpty()) {
+            return root;
+        }
+
+        List<NodeManager> propertyNodeManagerList = getPropertyNodeManagerList(properties);
+
+        for (List<?> fields : dataList) {
+            TreeNode cur = root;
+            for (int i = 0; i < properties.length; i++) {
+                String nodeKey = String.valueOf(propertyNodeManagerList.get(i).property().nodeKey2FieldValue(fields.get(i)));
+                TreeNode child = cur.getChildMap().get(nodeKey);
+                if (Objects.isNull(child)) {
+                    child = new TreeNode(nodeKey);
+                    cur.getChildren().add(child);
+                    cur.getChildMap().put(nodeKey, child);
+                }
+
+                cur = child;
+            }
+        }
+        return root;
     }
 
     //    /**

@@ -6,7 +6,7 @@
 
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.1.1.RELEASE</version>
+    <version>1.1.2.RELEASE</version>
 
     <packaging>jar</packaging>
 
@@ -25,6 +25,7 @@
         1.0.8.RELEASE 支持自定义函数
         1.1.0.RELEASE 支持字典树存储数据本身，提供更多的节点属性类型
         1.1.1.RELEASE 修复between查询
+        1.1.2.RELEASE 支持自定义节点类型
     </description>
 
     <developers>

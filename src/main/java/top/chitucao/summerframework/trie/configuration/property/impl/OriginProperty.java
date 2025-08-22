@@ -14,11 +14,15 @@ import top.chitucao.summerframework.trie.node.NodeType;
 public class OriginProperty<T, R> extends AbstractProperty<T, R, R> {
 
     public OriginProperty(String name) {
-        super(name, NodeType.HASH_MAP, false);
+        super(name, NodeType.HASH_MAP.name(), false);
+    }
+
+    public OriginProperty(String name, String nodeType) {
+        super(name, nodeType, false);
     }
 
     public OriginProperty(String name, NodeType nodeType) {
-        super(name, nodeType, false);
+        super(name, nodeType.name(), false);
     }
 
     @Override

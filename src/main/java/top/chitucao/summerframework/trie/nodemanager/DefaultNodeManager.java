@@ -5,9 +5,9 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import top.chitucao.summerframework.trie.configuration.property.Property;
-import top.chitucao.summerframework.trie.node.HashMapNode;
 import top.chitucao.summerframework.trie.node.Node;
-import top.chitucao.summerframework.trie.node.TreeMapNode;
+import top.chitucao.summerframework.trie.node.NodeFactory;
+import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
 import top.chitucao.summerframework.trie.operation.Func;
 import top.chitucao.summerframework.trie.operation.Operation;
 import top.chitucao.summerframework.trie.operation.OperationRegistry;
@@ -47,13 +47,7 @@ public class DefaultNodeManager implements NodeManager {
 
     @Override
     public <K> Node<K> createNewNode() {
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (property.nodeType()) {
-            case TREE_MAP:
-                return new TreeMapNode<>();
-            default:
-                return new HashMapNode<>();
-        }
+        return NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newNode();
     }
 
     @Override
@@ -135,53 +129,52 @@ public class DefaultNodeManager implements NodeManager {
         if (childMap.isEmpty() || childMap.size() == 1) {
             return childMap;
         }
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (property.nodeType()) {
-            case TREE_MAP:
-                //noinspection SortedCollectionWithNonComparableKeys
-                TreeMap<K, Node<K>> treeMapResult = new TreeMap<>();
-                switch (aggregation) {
-                    case MIN:
-                        Map.Entry<K, Node<K>> minEntry = ((TreeMap<K, Node<K>>) childMap).firstEntry();
-                        treeMapResult.put(minEntry.getKey(), minEntry.getValue());
-                        return treeMapResult;
-                    case MAX:
-                        Map.Entry<K, Node<K>> maxEntry = ((TreeMap<K, Node<K>>) childMap).lastEntry();
-                        treeMapResult.put(maxEntry.getKey(), maxEntry.getValue());
-                        return treeMapResult;
-                    default:
-                        return childMap;
-                }
-            default:
-                HashMap<K, Node<K>> hashMapResult = new HashMap<>();
-                switch (aggregation) {
-                    case MIN:
-                        Map.Entry<K, Node<K>> minEntry = null;
-                        for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
-                            //noinspection unchecked,rawtypes
-                            if (minEntry == null || ((Comparable) entry.getKey()).compareTo(minEntry.getKey()) < 0) {
-                                minEntry = entry;
-                            }
+        NodeFactory nodeFactory = NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType());
+        if (nodeFactory.isFromTreeMap()) {
+            //noinspection SortedCollectionWithNonComparableKeys
+            TreeMap<K, Node<K>> treeMapResult = new TreeMap<>();
+            switch (aggregation) {
+                case MIN:
+                    Map.Entry<K, Node<K>> minEntry = ((TreeMap<K, Node<K>>) childMap).firstEntry();
+                    treeMapResult.put(minEntry.getKey(), minEntry.getValue());
+                    return treeMapResult;
+                case MAX:
+                    Map.Entry<K, Node<K>> maxEntry = ((TreeMap<K, Node<K>>) childMap).lastEntry();
+                    treeMapResult.put(maxEntry.getKey(), maxEntry.getValue());
+                    return treeMapResult;
+                default:
+                    return childMap;
+            }
+        } else {
+            HashMap<K, Node<K>> hashMapResult = new HashMap<>();
+            switch (aggregation) {
+                case MIN:
+                    Map.Entry<K, Node<K>> minEntry = null;
+                    for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
+                        //noinspection unchecked,rawtypes
+                        if (minEntry == null || ((Comparable) entry.getKey()).compareTo(minEntry.getKey()) < 0) {
+                            minEntry = entry;
                         }
-                        if (Objects.nonNull(minEntry)) {
-                            hashMapResult.put(minEntry.getKey(), minEntry.getValue());
+                    }
+                    if (Objects.nonNull(minEntry)) {
+                        hashMapResult.put(minEntry.getKey(), minEntry.getValue());
+                    }
+                    return hashMapResult;
+                case MAX:
+                    Map.Entry<K, Node<K>> maxEntry = null;
+                    for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
+                        //noinspection unchecked,rawtypes
+                        if (maxEntry == null || ((Comparable) entry.getKey()).compareTo(maxEntry.getKey()) > 0) {
+                            maxEntry = entry;
                         }
-                        return hashMapResult;
-                    case MAX:
-                        Map.Entry<K, Node<K>> maxEntry = null;
-                        for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
-                            //noinspection unchecked,rawtypes
-                            if (maxEntry == null || ((Comparable) entry.getKey()).compareTo(maxEntry.getKey()) > 0) {
-                                maxEntry = entry;
-                            }
-                        }
-                        if (Objects.nonNull(maxEntry)) {
-                            hashMapResult.put(maxEntry.getKey(), maxEntry.getValue());
-                        }
-                        return hashMapResult;
-                    default:
-                        return childMap;
-                }
+                    }
+                    if (Objects.nonNull(maxEntry)) {
+                        hashMapResult.put(maxEntry.getKey(), maxEntry.getValue());
+                    }
+                    return hashMapResult;
+                default:
+                    return childMap;
+            }
         }
     }
 
@@ -259,11 +252,7 @@ public class DefaultNodeManager implements NodeManager {
             // 执行自定义函数
             return ((Func) operationEntry.getValue()).apply(childMap, property);
         }
-        try {
-            return OperationRegistry.getInstance().getOperate(property.nodeType().name(), operationEntry.getKey()).query(childMap, property, operationEntry.getValue());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return OperationRegistry.getInstance().getOperate(property.nodeType(), operationEntry.getKey()).query(childMap, property, operationEntry.getValue());
     }
 
 }

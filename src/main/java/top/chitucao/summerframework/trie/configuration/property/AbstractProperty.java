@@ -2,8 +2,6 @@ package top.chitucao.summerframework.trie.configuration.property;
 
 import java.util.function.Function;
 
-import top.chitucao.summerframework.trie.node.NodeType;
-
 /**
  * 抽象属性
  *
@@ -12,21 +10,21 @@ import top.chitucao.summerframework.trie.node.NodeType;
 public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
 
     /** 属性唯一名称 */
-    protected final String   name;
+    protected final String name;
 
     /** 层级 */
-    protected int            level;
+    protected int          level;
 
     /** 节点类型 */
-    protected final NodeType nodeType;
+    protected final String nodeType;
 
     /** 指定实体和字段值的映射关系 */
-    private Function<T, R>   object2FieldMapper;
+    private Function<T, R> object2FieldMapper;
 
     /** 是否是用到字典的节点属性 */
-    private final boolean    isDictProperty;
+    private final boolean  isDictProperty;
 
-    public AbstractProperty(String name, NodeType nodeType, boolean isDictProperty) {
+    public AbstractProperty(String name, String nodeType, boolean isDictProperty) {
         this.name = name;
         this.nodeType = nodeType;
         this.isDictProperty = isDictProperty;
@@ -48,7 +46,7 @@ public abstract class AbstractProperty<T, R, K> implements Property<T, R, K> {
     }
 
     @Override
-    public NodeType nodeType() {
+    public String nodeType() {
         return nodeType;
     }
 

@@ -16,16 +16,16 @@ public abstract class AbstractDictProperty<T, R, K> extends AbstractProperty<T, 
     protected final Dict<R, K> dict;
 
     public AbstractDictProperty(String name) {
-        super(name, NodeType.HASH_MAP, true);
+        super(name, NodeType.HASH_MAP.name(), true);
         this.dict = new HashMapDict<>();
     }
 
-    public AbstractDictProperty(String name, NodeType nodeType) {
+    public AbstractDictProperty(String name, String nodeType) {
         super(name, nodeType, true);
         this.dict = new HashMapDict<>();
     }
 
-    public AbstractDictProperty(String name, NodeType nodeType, Dict<R, K> dict) {
+    public AbstractDictProperty(String name, String nodeType, Dict<R, K> dict) {
         super(name, nodeType, true);
         this.dict = dict;
     }

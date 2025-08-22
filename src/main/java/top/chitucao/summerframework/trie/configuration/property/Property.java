@@ -2,7 +2,6 @@ package top.chitucao.summerframework.trie.configuration.property;
 
 import top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty;
 import top.chitucao.summerframework.trie.dict.Dict;
-import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
  * 节点属性
@@ -22,10 +21,11 @@ public interface Property<T, R, K> {
 
     /**
      * 节点类型
+     * {@link top.chitucao.summerframework.trie.node.NodeType}
      *
      * @return  节点类型
      */
-    NodeType nodeType();
+    String nodeType();
 
     /**
      * 层级

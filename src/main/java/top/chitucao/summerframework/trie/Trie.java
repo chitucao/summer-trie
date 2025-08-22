@@ -3,9 +3,11 @@ package top.chitucao.summerframework.trie;
 import java.util.List;
 import java.util.Set;
 
+import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.query.Aggregations;
 import top.chitucao.summerframework.trie.query.Criteria;
 import top.chitucao.summerframework.trie.query.ResultBuilder;
+import top.chitucao.summerframework.trie.query.TreeNode;
 
 /**
  * 字典树
@@ -13,6 +15,12 @@ import top.chitucao.summerframework.trie.query.ResultBuilder;
  * @author chitucao
  */
 public interface Trie<T> {
+
+    /**
+     * 根节点
+     * @return  根节点
+     */
+    Node<?> getRoot();
 
     /**
      * 深度
@@ -120,6 +128,17 @@ public interface Trie<T> {
      * @return          该字段所有字典值
      */
     <R> Set<R> dictValues(String property, Object... dictKeys);
+
+    /**
+     * 查询为树结构
+     * -1.返回查询结果为树结构
+     *
+     * @param criteria   查询条件
+     * @param aggregations 聚合条件
+     * @param properties 展示字段
+     * @return 树结构
+     */
+    TreeNode queryAsTreeNode(Criteria criteria, Aggregations aggregations, String... properties);
 
     //    /**
     //     * 所有字段的字典大小
