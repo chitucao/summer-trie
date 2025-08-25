@@ -117,11 +117,13 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      * @param count     减少的数量
      */
     public void decrNodeKeyCount(K nodeKey, int count) {
-        if (!counter.containsKey(nodeKey)) {
+        Integer nodeKeyCount = counter.get(nodeKey);
+        if (Objects.isNull(nodeKeyCount)) {
             return;
         }
-        counter.put(nodeKey, counter.get(nodeKey) - count);
-        if (removeDictIfNonCount && Objects.equals(counter.get(nodeKey), 0)) {
+        nodeKeyCount -= count;
+        counter.put(nodeKey, nodeKeyCount);
+        if (removeDictIfNonCount && Objects.equals(nodeKeyCount, 0)) {
             removeNodeKey(nodeKey);
         }
     }
@@ -132,8 +134,10 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      * @param nodeKey   字典key
      */
     public void removeNodeKey(K nodeKey) {
-        indexer.remove(dict.get(nodeKey));
-        dict.remove(nodeKey);
+        R fieldValue = dict.remove(nodeKey);
+        if (Objects.nonNull(fieldValue)) {
+            indexer.remove(fieldValue);
+        }
         counter.remove(nodeKey);
     }
 }
