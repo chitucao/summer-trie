@@ -1,6 +1,9 @@
 package top.chitucao.summerframework.trie.nodemanager;
 
-import java.util.*;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -130,23 +133,25 @@ public class DefaultNodeManager implements NodeManager {
             return childMap;
         }
         NodeFactory nodeFactory = NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType());
-        if (nodeFactory.isFromTreeMap()) {
-            //noinspection SortedCollectionWithNonComparableKeys
-            TreeMap<K, Node<K>> treeMapResult = new TreeMap<>();
+
+        // 创建返回值
+        Map<K, Node<K>> newChildren = nodeFactory.newChildren();
+        if (newChildren instanceof NavigableMap) {
+            // 适用于TreeMap和SkipListMap，O(logn)
             switch (aggregation) {
                 case MIN:
-                    Map.Entry<K, Node<K>> minEntry = ((TreeMap<K, Node<K>>) childMap).firstEntry();
-                    treeMapResult.put(minEntry.getKey(), minEntry.getValue());
-                    return treeMapResult;
+                    Map.Entry<K, Node<K>> minEntry = ((NavigableMap<K, Node<K>>) childMap).firstEntry();
+                    newChildren.put(minEntry.getKey(), minEntry.getValue());
+                    return newChildren;
                 case MAX:
-                    Map.Entry<K, Node<K>> maxEntry = ((TreeMap<K, Node<K>>) childMap).lastEntry();
-                    treeMapResult.put(maxEntry.getKey(), maxEntry.getValue());
-                    return treeMapResult;
+                    Map.Entry<K, Node<K>> maxEntry = ((NavigableMap<K, Node<K>>) childMap).lastEntry();
+                    newChildren.put(maxEntry.getKey(), maxEntry.getValue());
+                    return newChildren;
                 default:
                     return childMap;
             }
         } else {
-            HashMap<K, Node<K>> hashMapResult = new HashMap<>();
+            // 兜底使用遍历的方式，例如HashMap
             switch (aggregation) {
                 case MIN:
                     Map.Entry<K, Node<K>> minEntry = null;
@@ -157,9 +162,9 @@ public class DefaultNodeManager implements NodeManager {
                         }
                     }
                     if (Objects.nonNull(minEntry)) {
-                        hashMapResult.put(minEntry.getKey(), minEntry.getValue());
+                        newChildren.put(minEntry.getKey(), minEntry.getValue());
                     }
-                    return hashMapResult;
+                    return newChildren;
                 case MAX:
                     Map.Entry<K, Node<K>> maxEntry = null;
                     for (Map.Entry<K, Node<K>> entry : childMap.entrySet()) {
@@ -169,9 +174,9 @@ public class DefaultNodeManager implements NodeManager {
                         }
                     }
                     if (Objects.nonNull(maxEntry)) {
-                        hashMapResult.put(maxEntry.getKey(), maxEntry.getValue());
+                        newChildren.put(maxEntry.getKey(), maxEntry.getValue());
                     }
-                    return hashMapResult;
+                    return newChildren;
                 default:
                     return childMap;
             }

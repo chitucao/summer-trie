@@ -6,7 +6,7 @@
 
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.1.4.RELEASE</version>
+    <version>1.1.5.RELEASE</version>
 
     <packaging>jar</packaging>
 
@@ -27,6 +27,7 @@
         1.1.1.RELEASE 修复between查询
         1.1.2.RELEASE 支持自定义节点类型
         1.1.4.RELEASE 修复并发更新问题
+        1.1.5.RELEASE 支持线程安全的trie节点
     </description>
 
     <developers>

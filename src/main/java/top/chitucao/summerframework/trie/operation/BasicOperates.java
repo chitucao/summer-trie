@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.Node;
+import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
 
 /**
  * 基本操作实现
@@ -12,6 +13,7 @@ import top.chitucao.summerframework.trie.node.Node;
  * @author chitucao(zhonggang.zhu)
  * @version Id: BasicOperates.java, v 0.1 2025-08-11 15:11 chitucao Exp $$
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class BasicOperates {
     //---------------------------------------- HASH_MAP操作 ----------------------------------------
     // 等于
@@ -21,7 +23,7 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         Node<?> childNode = childMap.get(key);
         if (Objects.nonNull(childNode)) {
             result.put(key, childNode);
@@ -36,7 +38,7 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
             if (Objects.equals(entry.getKey(), key)) {
                 continue;
@@ -53,9 +55,8 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            //noinspection unchecked,rawtypes
             if (((Comparable) entry.getKey()).compareTo(key) > 0) {
                 result.put(entry.getKey(), entry.getValue());
             }
@@ -70,9 +71,8 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            //noinspection unchecked,rawtypes
             if (((Comparable) entry.getKey()).compareTo(key) >= 0) {
                 result.put(entry.getKey(), entry.getValue());
             }
@@ -87,9 +87,8 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            //noinspection unchecked,rawtypes
             if (((Comparable) entry.getKey()).compareTo(key) < 0) {
                 result.put(entry.getKey(), entry.getValue());
             }
@@ -104,9 +103,8 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            //noinspection unchecked,rawtypes
             if (((Comparable) entry.getKey()).compareTo(key) <= 0) {
                 result.put(entry.getKey(), entry.getValue());
             }
@@ -121,41 +119,33 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         List<Comparable> range = (List<Comparable>) key;
-        @SuppressWarnings("rawtypes")
         Comparable left = range.get(0);
-        @SuppressWarnings("rawtypes")
         Comparable right = range.get(1);
 
         if (Objects.isNull(left) && Objects.isNull(right)) {
             return childMap;
         }
 
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         if (Objects.nonNull(left) && Objects.nonNull(right)) {
-            //noinspection unchecked
             if (left.compareTo(right) > 0) {
                 return childMap;
             }
             for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-                //noinspection rawtypes
                 Comparable entryKey = (Comparable) entry.getKey();
-                //noinspection unchecked
                 if (entryKey.compareTo(left) >= 0 && entryKey.compareTo(right) <= 0) {
                     result.put(entry.getKey(), entry.getValue());
                 }
             }
         } else if (Objects.nonNull(left)) {
             for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-                //noinspection unchecked,rawtypes
                 if (((Comparable) entry.getKey()).compareTo(left) >= 0) {
                     result.put(entry.getKey(), entry.getValue());
                 }
             }
         } else {
             for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-                //noinspection unchecked,rawtypes
                 if (((Comparable) entry.getKey()).compareTo(right) <= 0) {
                     result.put(entry.getKey(), entry.getValue());
                 }
@@ -172,14 +162,13 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         Set<?> keys = new HashSet<>((List) key);
 
         if (keys.isEmpty()) {
             return childMap;
         }
 
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
 
         // 优化单条数据的in操作
         if (keys.size() == 1) {
@@ -207,14 +196,13 @@ public class BasicOperates {
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         Set<?> keys = new HashSet<>((List) key);
 
         if (keys.isEmpty()) {
             return childMap;
         }
 
-        Map<Object, Node<?>> result = new HashMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
             if (!keys.contains(entry.getKey())) {
                 result.put(entry.getKey(), entry.getValue());
@@ -227,12 +215,12 @@ public class BasicOperates {
     //---------------------------------------- TREE_MAP操作 ----------------------------------------
     // 等于
     // treeMap O(logn)
-    public static final Operate TREE_MAP_EQ_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_EQ_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new TreeMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         Node<?> childNode = childMap.get(key);
         if (Objects.nonNull(childNode)) {
             result.put(key, childNode);
@@ -242,12 +230,12 @@ public class BasicOperates {
 
     // 不等于
     // treeMap O(n)
-    public static final Operate TREE_MAP_NE_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_NE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map<Object, Node<?>> result = new TreeMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
             if (Objects.equals(entry.getKey(), key)) {
                 continue;
@@ -259,88 +247,83 @@ public class BasicOperates {
 
     // 大于
     // treeMap O(logn + m)
-    public static final Operate TREE_MAP_GT_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_GT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        //noinspection unchecked
-        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).tailMap(key, false));
+        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, false);
+        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
     };
 
     // 大于等于
     // treeMap O(logn + m)
-    public static final Operate TREE_MAP_GTE_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_GTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        //noinspection unchecked
-        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).tailMap(key, true));
+        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, true);
+        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
     };
 
     // 小于
     // treeMap O(logn + m)
-    public static final Operate TREE_MAP_LT_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_LT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        //noinspection unchecked
-        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).headMap(key, false));
+        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(key, false);
+        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
     };
 
     // 小于等于
     // treeMap O(logn + m)
-    public static final Operate TREE_MAP_LTE_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_LTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        //noinspection unchecked
-        return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).headMap(key, true));
+        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(key, true);
+        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
     };
 
     // 区间
     // treeMap O(logn + m)
-    public static final Operate TREE_MAP_BETWEEN_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_BETWEEN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         List<Comparable> range = (List<Comparable>) key;
-        @SuppressWarnings("rawtypes")
         Comparable left = range.get(0);
-        @SuppressWarnings("rawtypes")
         Comparable right = range.get(1);
 
         if (Objects.isNull(left) && Objects.isNull(right)) {
-            return new TreeMap<>(childMap);
+            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren((Map) childMap));
         } else if (Objects.nonNull(left) && Objects.nonNull(right)) {
-            //noinspection unchecked
             if (left.compareTo(right) > 0) {
-                return new TreeMap<>();
+                return (Map) (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
             }
-            //noinspection unchecked
-            return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).subMap(left, true, right, true));
+            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).subMap(left, true, right, true);
+            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
         } else if (Objects.nonNull(left)) {
-            //noinspection unchecked
-            return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).tailMap(left, true));
+            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(left, true);
+            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
         } else {
-            //noinspection unchecked
-            return new TreeMap<>(((TreeMap<Object, Node<?>>) childMap).headMap(right, true));
+            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(right, true);
+            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
         }
     };
 
     // 包含
     // treeMap O(n)
-    public static final Operate TREE_MAP_IN_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_IN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         Set<?> keys = new HashSet<>((List) key);
 
         if (keys.isEmpty()) {
@@ -370,19 +353,18 @@ public class BasicOperates {
 
     // 不包含
     // treeMap O(n)
-    public static final Operate TREE_MAP_NIN_OP = (childMap, property, value) -> {
+    public static final Operate NAVIGABLE_MAP_NIN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        @SuppressWarnings({ "unchecked", "rawtypes" })
         Set<?> keys = new HashSet<>((List) key);
 
         if (keys.isEmpty()) {
             return childMap;
         }
 
-        Map<Object, Node<?>> result = new TreeMap<>();
+        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
             if (!keys.contains(entry.getKey())) {
                 result.put(entry.getKey(), entry.getValue());
@@ -393,7 +375,6 @@ public class BasicOperates {
     };
 
     // 将查询参数转换为字典键
-    @SuppressWarnings("unchecked")
     public static <T, R, K> Object mapperDictKey(Property<T, R, K> property, Object value) {
         if (Objects.isNull(value)) {
             return value;
@@ -410,7 +391,6 @@ public class BasicOperates {
 
     // 获取字典键对应的字典值
     public static <T, R, K> R mapperDictValue(Property<?, ?, ?> property, K key) {
-        //noinspection unchecked
         return ((Property<T, R, K>) property).nodeKey2FieldValue(key);
     }
 }

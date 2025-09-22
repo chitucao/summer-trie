@@ -36,11 +36,15 @@ public class OperationRegistry {
     public void registerBaseOperations() {
         // HashMap
         registerBaseHashMapOperations(NodeType.HASH_MAP.name());
+        registerBaseHashMapOperations(NodeType.CONCURRENT_HASH_MAP.name());
         registerBaseHashMapOperations(NodeType.NAMED_HASH_MAP.name());
 
         // TreeMap
-        registerBaseTreeMapOperations(NodeType.TREE_MAP.name());
-        registerBaseTreeMapOperations(NodeType.NAMED_TREE_MAP.name());
+        registerBaseNavigableMapOperations(NodeType.TREE_MAP.name());
+        registerBaseNavigableMapOperations(NodeType.NAMED_TREE_MAP.name());
+
+        // SkipListMap
+        registerBaseNavigableMapOperations(NodeType.CONCURRENT_SKIP_LIST_MAP.name());
     }
 
     /**
@@ -61,20 +65,20 @@ public class OperationRegistry {
     }
 
     /**
-     * 注册节点为treeMap相关的操作
+     * 注册节点为navigableMap相关的操作
      *
      * @param nodeType          节点类型
      */
-    public void registerBaseTreeMapOperations(String nodeType) {
-        registerOperation(nodeType, Operation.EQ.getValue(), BasicOperates.TREE_MAP_EQ_OP);
-        registerOperation(nodeType, Operation.NE.getValue(), BasicOperates.TREE_MAP_NE_OP);
-        registerOperation(nodeType, Operation.GT.getValue(), BasicOperates.TREE_MAP_GT_OP);
-        registerOperation(nodeType, Operation.GTE.getValue(), BasicOperates.TREE_MAP_GTE_OP);
-        registerOperation(nodeType, Operation.LT.getValue(), BasicOperates.TREE_MAP_LT_OP);
-        registerOperation(nodeType, Operation.LTE.getValue(), BasicOperates.TREE_MAP_LTE_OP);
-        registerOperation(nodeType, Operation.BETWEEN.getValue(), BasicOperates.TREE_MAP_BETWEEN_OP);
-        registerOperation(nodeType, Operation.IN.getValue(), BasicOperates.TREE_MAP_IN_OP);
-        registerOperation(nodeType, Operation.NIN.getValue(), BasicOperates.TREE_MAP_NIN_OP);
+    public void registerBaseNavigableMapOperations(String nodeType) {
+        registerOperation(nodeType, Operation.EQ.getValue(), BasicOperates.NAVIGABLE_MAP_EQ_OP);
+        registerOperation(nodeType, Operation.NE.getValue(), BasicOperates.NAVIGABLE_MAP_NE_OP);
+        registerOperation(nodeType, Operation.GT.getValue(), BasicOperates.NAVIGABLE_MAP_GT_OP);
+        registerOperation(nodeType, Operation.GTE.getValue(), BasicOperates.NAVIGABLE_MAP_GTE_OP);
+        registerOperation(nodeType, Operation.LT.getValue(), BasicOperates.NAVIGABLE_MAP_LT_OP);
+        registerOperation(nodeType, Operation.LTE.getValue(), BasicOperates.NAVIGABLE_MAP_LTE_OP);
+        registerOperation(nodeType, Operation.BETWEEN.getValue(), BasicOperates.NAVIGABLE_MAP_BETWEEN_OP);
+        registerOperation(nodeType, Operation.IN.getValue(), BasicOperates.NAVIGABLE_MAP_IN_OP);
+        registerOperation(nodeType, Operation.NIN.getValue(), BasicOperates.NAVIGABLE_MAP_NIN_OP);
     }
 
     /**

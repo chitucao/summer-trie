@@ -153,7 +153,6 @@ public class MapTrie<T> implements Trie<T> {
             } else {
                 Set<?> dictKeySet = nodeManager.search(cur, criterion).keySet();
                 for (Object dictKey : dictKeySet) {
-                    //noinspection unchecked
                     nodeManager.removeChild((Node<Object>) cur, dictKey);
                 }
                 return cur.childSize() == 0 ? -dictKeySet.size() : dictKeySet.size();
@@ -299,7 +298,6 @@ public class MapTrie<T> implements Trie<T> {
             throw new IllegalStateException("Leaf node is not a data node, Data search is not supported");
         }
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        //noinspection unchecked
         return (List<T>) tailNodeManager().mappingDictValues(levelSearch(criterionMap, new Aggregations(), tailNodeManager().property().level())).collect(Collectors.toList());
     }
 
@@ -315,7 +313,6 @@ public class MapTrie<T> implements Trie<T> {
     public <R> List<R> propertySearch(Criteria criteria, String property) {
         propertyCheck(property);
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        //noinspection unchecked
         return (List<R>) nodeManagerNameMap.get(property).mappingDictValues(levelSearch(criterionMap, new Aggregations(), nodeManagerNameMap.get(property).property().level()))
             .collect(Collectors.toList());
     }

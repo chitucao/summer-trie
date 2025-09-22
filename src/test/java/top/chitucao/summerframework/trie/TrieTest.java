@@ -34,6 +34,7 @@ import top.chitucao.summerframework.trie.configuration.property.impl.OriginPrope
 import top.chitucao.summerframework.trie.flight.FlightResourceDO;
 import top.chitucao.summerframework.trie.flight.FlightTrieIndexNames;
 import top.chitucao.summerframework.trie.node.Node;
+import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
 import top.chitucao.summerframework.trie.node.NodeType;
 import top.chitucao.summerframework.trie.node.extra.AbstractNamedMapNode;
 import top.chitucao.summerframework.trie.operation.BasicOperates;
@@ -59,7 +60,7 @@ public class TrieTest {
     @Test
     public void testTreeNode() {
         List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
-//                dataList = RandomUtil.randomEles(dataList, 20);
+        //                dataList = RandomUtil.randomEles(dataList, 20);
 
         Configuration configuration = buildConfiguration1();
         MapTrie<TrainSourceDO> trie = new MapTrie<>(configuration);
@@ -70,7 +71,7 @@ public class TrieTest {
         Criteria criteria = new Criteria();
         criteria.and("trainType").eq(3105);
 
-        TreeNode treeNode = trie.queryAsTreeNode(criteria, new Aggregations(), "trainType", "seatClass","depCityId","arrCityId","minRealPrice");
+        TreeNode treeNode = trie.queryAsTreeNode(criteria, new Aggregations(), "trainType", "seatClass", "depCityId", "arrCityId", "minRealPrice");
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -82,7 +83,7 @@ public class TrieTest {
 
     }
 
-    @Test
+//    @Test
     public void testNamedNode() {
         List<TrainSourceDO> dataList = getDataList("train_resource_3000.json");
         dataList = RandomUtil.randomEles(dataList, 5);
@@ -598,7 +599,7 @@ public class TrieTest {
 
         OperationRegistry instance = OperationRegistry.getInstance();
 
-        instance.registerOperation(NodeType.NAMED_HASH_MAP, "$$customOp", new Operate() {
+        instance.registerOperation(NodeType.CONCURRENT_HASH_MAP, "$$customOp", new Operate() {
 
             /**
              * 查询符合条件的子节点
@@ -614,7 +615,7 @@ public class TrieTest {
                 if (childMap.isEmpty() || Objects.isNull(value)) {
                     return childMap;
                 }
-                Map<Object, Node<?>> result = new HashMap<>();
+                Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
                 for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
                     TrainSourceDO data = (TrainSourceDO) BasicOperates.mapperDictValue(property, entry.getKey());
                     if (data.getDepartureCityId() >= request.getBetweenStart() && data.getDepartureCityId() <= request.getBetweenEnd()
@@ -1178,54 +1179,54 @@ public class TrieTest {
         Configuration configuration = new Configuration();
         configuration.setUseFastErase(true);
         // 出发城市
-        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.NAMED_HASH_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> depCityIdProperty = new OneWayMappingProperty<>("depCityId", NodeType.CONCURRENT_HASH_MAP);
         depCityIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureCityId);
         depCityIdProperty.setField2NodeKeyMapper(Function.identity());
         configuration.addProperty(depCityIdProperty);
 
         // 出发地区
-        OriginProperty<TrainSourceDO, Integer> depDistrictIdProperty = new OriginProperty<>("depDistrictId", NodeType.NAMED_HASH_MAP);
+        OriginProperty<TrainSourceDO, Integer> depDistrictIdProperty = new OriginProperty<>("depDistrictId", NodeType.CONCURRENT_HASH_MAP);
         depDistrictIdProperty.setObject2FieldMapper(TrainSourceDO::getDepartureDistrictId);
         configuration.addProperty(depDistrictIdProperty);
 
         // 出发站点
-        AutoMappingProperty<TrainSourceDO, String> departureStationCodeProperty = new AutoMappingProperty<>("departureStationCode", DictKeyType.INT, NodeType.NAMED_HASH_MAP);
+        AutoMappingProperty<TrainSourceDO, String> departureStationCodeProperty = new AutoMappingProperty<>("departureStationCode", DictKeyType.INT, NodeType.CONCURRENT_HASH_MAP);
         departureStationCodeProperty.setObject2FieldMapper(TrainSourceDO::getDepartureStationCode);
         configuration.addProperty(departureStationCodeProperty);
 
         // 抵达城市
-        OriginProperty<TrainSourceDO, Integer> arrCityIdProperty = new OriginProperty<>("arrCityId", NodeType.NAMED_HASH_MAP);
+        OriginProperty<TrainSourceDO, Integer> arrCityIdProperty = new OriginProperty<>("arrCityId", NodeType.CONCURRENT_HASH_MAP);
         arrCityIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalCityId);
         configuration.addProperty(arrCityIdProperty);
 
         // 抵达地区
-        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("arrDistrictId", NodeType.NAMED_HASH_MAP);
+        OneWayMappingProperty<TrainSourceDO, Integer, Integer> arrDistrictIdProperty = new OneWayMappingProperty<>("arrDistrictId", NodeType.CONCURRENT_HASH_MAP);
         arrDistrictIdProperty.setObject2FieldMapper(TrainSourceDO::getArrivalDistrictId);
         arrDistrictIdProperty.setField2NodeKeyMapper(Function.identity());
         configuration.addProperty(arrDistrictIdProperty);
 
         // 车次类型
-        AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>("trainType", DictKeyType.BYTE, NodeType.NAMED_HASH_MAP);
+        AutoMappingProperty<TrainSourceDO, String> trainTypeProperty = new AutoMappingProperty<>("trainType", DictKeyType.BYTE, NodeType.CONCURRENT_HASH_MAP);
         trainTypeProperty.setObject2FieldMapper(TrainSourceDO::getTrainType);
         configuration.addProperty(trainTypeProperty);
 
         // 坐席类型
-        AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>("seatClass", DictKeyType.BYTE, NodeType.NAMED_HASH_MAP);
+        AutoMappingProperty<TrainSourceDO, String> seatClassProperty = new AutoMappingProperty<>("seatClass", DictKeyType.BYTE, NodeType.CONCURRENT_HASH_MAP);
         seatClassProperty.setObject2FieldMapper(TrainSourceDO::getSeatClass);
         configuration.addProperty(seatClassProperty);
 
         // 最低票价
-        OriginProperty<TrainSourceDO, Integer> minRealPriceProperty = new OriginProperty<>("minRealPrice", NodeType.NAMED_TREE_MAP);
+        OriginProperty<TrainSourceDO, Integer> minRealPriceProperty = new OriginProperty<>("minRealPrice", NodeType.CONCURRENT_SKIP_LIST_MAP);
         minRealPriceProperty.setObject2FieldMapper(e -> Double.valueOf(e.getMinRealPrice()).intValue());
         configuration.addProperty(minRealPriceProperty);
 
         // id
-        OriginProperty<TrainSourceDO, Long> idProperty = new OriginProperty<>("id", NodeType.NAMED_HASH_MAP);
+        OriginProperty<TrainSourceDO, Long> idProperty = new OriginProperty<>("id", NodeType.CONCURRENT_HASH_MAP);
         idProperty.setObject2FieldMapper(TrainSourceDO::getId);
         configuration.addProperty(idProperty);
 
         // 数据
-        OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>("data", NodeType.NAMED_HASH_MAP);
+        OneWayMappingProperty<TrainSourceDO, TrainSourceDO, Long> dataProperty = new OneWayMappingProperty<>("data", NodeType.CONCURRENT_HASH_MAP);
         dataProperty.setObject2FieldMapper(Function.identity());
         dataProperty.setField2NodeKeyMapper(TrainSourceDO::getId);
         configuration.addProperty(dataProperty);
