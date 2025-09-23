@@ -10,8 +10,7 @@ import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
 /**
  * 基本操作实现
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: BasicOperates.java, v 0.1 2025-08-11 15:11 chitucao Exp $$
+ * @author chitucao
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class BasicOperates {

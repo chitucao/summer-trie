@@ -10,8 +10,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
  * -1.提供了一些基本的操作方法 {@link OperationRegistry#registerBaseOperations()}
  * -2.也可注册自定义的操作方法 {@link OperationRegistry#registerOperation(String, String, Operate)}
  * 
- * @author chitucao(zhonggang.zhu)
- * @version Id: OperationRegistry.java, v 0.1 2025-08-11 14:29 chitucao Exp $$
+ * @author chitucao
  */
 public class OperationRegistry {
 

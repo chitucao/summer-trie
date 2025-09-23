@@ -9,7 +9,7 @@ import top.chitucao.summerframework.trie.node.Node;
 /**
  * AbstractNamedMapNode
  *
- * @author chitucao(zhonggang.zhu)
+ * @author chitucao
  * @version Id: AbstractNamedMapNode.java, v 0.1 2025-08-20 16:15 chitucao Exp $$
  */
 public abstract class AbstractNamedMapNode<K> extends AbstractMapNode<K> implements Serializable {

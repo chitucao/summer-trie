@@ -10,8 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 树节点，用于树查询的展示
- * @author chitucao(zhonggang.zhu)
- * @version Id: TreeNode.java, v 0.1 2025-08-20 18:06 chitucao Exp $$
+ * @author chitucao
  */
 public class TreeNode implements Serializable {
 

@@ -9,8 +9,7 @@ import java.util.function.Supplier;
  * map实现的trie节点抽象
  * @param <K>   节点值类型
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: AbstractMapNode.java, v 0.1 2025-08-18 10:22 chitucao Exp $$
+ * @author chitucao
  */
 public abstract class AbstractMapNode<K> implements Node<K> {
 

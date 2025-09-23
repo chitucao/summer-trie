@@ -7,8 +7,7 @@ import java.util.stream.Stream;
 /**
  * 线程安全的HashMap实现的trie节点
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: ConcurrentHashMapNode.java, v 0.1 2025-09-22 14:03 chitucao Exp $$
+ * @author chitucao
  */
 public class ConcurrentHashMapNode<K> extends AbstractMapNode<K> {
 

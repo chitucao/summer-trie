@@ -12,8 +12,7 @@ import top.chitucao.summerframework.trie.node.extra.NamedTreeMapNode;
 /**
  * 节点工厂实现注册表
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NodeFactoryRegistry.java, v 0.1 2025-08-20 16:32 chitucao Exp $$
+ * @author chitucao
  */
 public class NodeFactoryRegistry {
 

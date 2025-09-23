@@ -8,8 +8,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
  * 节点值和字段值保持一致的节点属性
  * -1.树节点值存的就是字段值本身
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: OriginProperty.java, v 0.1 2025-08-19 15:46 chitucao Exp $$
+ * @author chitucao
  */
 public class OriginProperty<T, R> extends AbstractProperty<T, R, R> {
 

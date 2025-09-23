@@ -10,8 +10,7 @@ import top.chitucao.summerframework.trie.node.Node;
 /**
  * NamedHashMapNode
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NamedHashMapNode.java, v 0.1 2025-08-20 16:21 chitucao Exp $$
+ * @author chitucao
  */
 public class NamedHashMapNode<K> extends AbstractNamedMapNode<K> implements Serializable{
 

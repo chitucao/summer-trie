@@ -7,8 +7,7 @@ import java.util.stream.Stream;
 /**
  * 跳表实现的线程安全的trie节点
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: ConcurrentSkipListMapNode.java, v 0.1 2025-09-22 13:55 chitucao Exp $$
+ * @author chitucao
  */
 public class ConcurrentSkipListMapNode<K> extends AbstractMapNode<K> {
 

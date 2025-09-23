@@ -8,8 +8,7 @@ import top.chitucao.summerframework.trie.node.Node;
 /**
  * 自定义函数
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Func.java, v 0.1 2025-08-15 13:51 chitucao Exp $$
+ * @author chitucao
  */
 public interface Func {
 

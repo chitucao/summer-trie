@@ -5,8 +5,7 @@ import java.util.Map;
 /**
  * 节点工厂
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NodeFactory.java, v 0.1 2025-08-20 16:35 chitucao Exp $$
+ * @author chitucao
  */
 public interface NodeFactory {
 

@@ -10,8 +10,7 @@ import top.chitucao.summerframework.trie.node.Node;
 /**
  * NamedTreeMapNode
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: NamedTreeMapNode.java, v 0.1 2025-08-20 16:23 chitucao Exp $$
+ * @author chitucao
  */
 public class NamedTreeMapNode<K> extends AbstractNamedMapNode<K> implements Serializable {
 

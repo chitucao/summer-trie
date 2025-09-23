@@ -7,8 +7,7 @@ import top.chitucao.summerframework.trie.node.NodeType;
 /**
  * 包含字典的节点属性
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: AbstractDictProperty.java, v 0.1 2025-08-19 17:51 chitucao Exp $$
+ * @author chitucao
  */
 public abstract class AbstractDictProperty<T, R, K> extends AbstractProperty<T, R, K> {
 

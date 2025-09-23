@@ -8,8 +8,7 @@ import top.chitucao.summerframework.trie.node.Node;
 /**
  * 操作实现
  *
- * @author chitucao(zhonggang.zhu)
- * @version Id: Operate.java, v 0.1 2025-08-11 14:21 chitucao Exp $$
+ * @author chitucao
  */
 public interface Operate {
 
