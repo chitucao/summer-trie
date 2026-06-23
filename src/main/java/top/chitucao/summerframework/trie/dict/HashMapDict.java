@@ -18,26 +18,36 @@ public class HashMapDict<R, K> implements Dict<R, K> {
 
     protected Map<R, K>       indexer;
 
+    /** 计数器：仅在 removeDictIfNonCount=true 时才分配并维护；否则为 null（计数不再被使用，size 由节点 subtreeSize 维护），省一份 map */
     protected Map<K, Integer> counter;
 
     /** 在字典值数量为0的时候是否删除该字典，如果是定时重建，并且快速删除，则没必要开启这个选项，开启了可以稍微节省点空间 */
     protected boolean         removeDictIfNonCount;
 
     public HashMapDict() {
+        this(false);
+    }
+
+    public HashMapDict(boolean removeDictIfNonCount) {
         this.dict = new ConcurrentHashMap<>();
         this.indexer = new ConcurrentHashMap<>();
-        this.counter = new ConcurrentHashMap<>();
-        this.removeDictIfNonCount = false;
+        this.removeDictIfNonCount = removeDictIfNonCount;
+        this.counter = removeDictIfNonCount ? new ConcurrentHashMap<>() : null;
     }
 
     /**
      * 适用于字典大小确定的情况下，饥饿初始化，避免扩容，同时提高hash的效率
      */
     public HashMapDict(Integer capacity) {
-        this.dict = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
-        this.indexer = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
-        this.counter = new ConcurrentHashMap<>((int) (capacity / 0.75f) + 1, 1);
-        this.removeDictIfNonCount = false;
+        this(capacity, false);
+    }
+
+    public HashMapDict(Integer capacity, boolean removeDictIfNonCount) {
+        int initCap = (int) (capacity / 0.75f) + 1;
+        this.dict = new ConcurrentHashMap<>(initCap, 1);
+        this.indexer = new ConcurrentHashMap<>(initCap, 1);
+        this.removeDictIfNonCount = removeDictIfNonCount;
+        this.counter = removeDictIfNonCount ? new ConcurrentHashMap<>(initCap, 1) : null;
     }
 
     /**
@@ -80,8 +90,10 @@ public class HashMapDict<R, K> implements Dict<R, K> {
     public void put(K nodeKey, R fieldValue) {
         indexer.put(fieldValue, nodeKey);
         dict.put(nodeKey, fieldValue);
-        // 原子自增计数，避免并发下 getOrDefault + put 读改写丢更新导致 size/删除判断出错
-        counter.merge(nodeKey, 1, Integer::sum);
+        // 仅在启用 removeDictIfNonCount 时才维护计数（原子自增）；默认关闭时 counter 为 null，省去一份 map
+        if (counter != null) {
+            counter.merge(nodeKey, 1, Integer::sum);
+        }
     }
 
     /**
@@ -143,6 +155,10 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public void decrNodeKeyCount(K nodeKey, int count) {
+        // 未启用 removeDictIfNonCount 时不维护计数，直接返回（size 由节点 subtreeSize 维护，字典清理走 removeNodeKey）
+        if (counter == null) {
+            return;
+        }
         // 原子读改写，避免并发下计数丢更新；key不存在时computeIfPresent直接返回null不做处理
         Integer nodeKeyCount = counter.computeIfPresent(nodeKey, (k, v) -> v - count);
         if (removeDictIfNonCount && Objects.nonNull(nodeKeyCount) && nodeKeyCount <= 0) {
@@ -161,6 +177,8 @@ public class HashMapDict<R, K> implements Dict<R, K> {
         if (Objects.nonNull(fieldValue)) {
             indexer.remove(fieldValue);
         }
-        counter.remove(nodeKey);
+        if (counter != null) {
+            counter.remove(nodeKey);
+        }
     }
 }

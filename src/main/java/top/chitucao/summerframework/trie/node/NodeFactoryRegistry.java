@@ -295,6 +295,34 @@ public class NodeFactoryRegistry {
                 return new TreeMap<>(childMap);
             }
         });
+
+        registerNodeFactory(new NodeFactory() {
+            @Override
+            public NodeType nodeType() {
+                return NodeType.ADAPTIVE_HASH;
+            }
+
+            @Override
+            public <K> Node<K> newNode() {
+                return new AdaptiveNode<>();
+            }
+
+            /**
+             * 查询结果容器仍用普通 HashMap（临时对象，不影响节点常驻内存）
+             */
+            @Override
+            public <K> Map<K, Node<K>> newChildren() {
+                return new HashMap<>();
+            }
+
+            @Override
+            public <K> Map<K, Node<K>> newChildren(Map<K, Node<K>> childMap) {
+                if (childMap == null || childMap.isEmpty()) {
+                    return newChildren();
+                }
+                return new HashMap<>(childMap);
+            }
+        });
     }
 
     /**

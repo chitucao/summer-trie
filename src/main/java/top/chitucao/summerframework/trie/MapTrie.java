@@ -240,7 +240,15 @@ public class MapTrie<T> implements Trie<T> {
             Map.Entry<?, ? extends Node<?>> entry = iterator.next();
             int removeCount = doNormErase(entry.getValue(), nodeManager.next(), criterionMap);
             if (removeCount < 0) {
-                iterator.remove();
+                if (Objects.isNull(criterion)) {
+                    // childMap 即真实子节点映射，迭代器安全删除
+                    iterator.remove();
+                } else {
+                    // childMap 是 search 过滤出的副本，iterator.remove 只动副本；必须从真实节点删除被完全清空的子节点，
+                    // 否则残留孤儿子树（字典已清空，dataSearch 会返回一串 null）。字典key的清理仍交给 decrNodeKeyCount（共享key安全）
+                    //noinspection unchecked
+                    ((Node<Object>) cur).removeChild(entry.getKey());
+                }
             }
             int removeCountAbs = Math.abs(removeCount);
             Property<?, ?, Object> property = nodeManager.property();

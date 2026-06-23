@@ -74,6 +74,8 @@
         <!--单元测试相关的包-->
         <hutool.version>5.8.32</hutool.version>
         <junit.version>4.13.2</junit.version>
+        <jmh.version>1.37</jmh.version>
+        <jol.version>0.17</jol.version>
     </properties>
 
     <dependencies>
@@ -110,6 +112,26 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--基准测试(JMH)与内存度量(JOL)，仅测试期使用-->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>${jol.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

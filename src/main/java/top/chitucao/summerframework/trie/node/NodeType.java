@@ -26,6 +26,9 @@ public enum NodeType {
                       NAMED_TREE_MAP,
 
                       /** 哈希映射（每个节点有一个名称属性） */
-                      NAMED_HASH_MAP;
+                      NAMED_HASH_MAP,
+
+                      /** 自适应哈希映射：低扇出用紧凑数组、高扇出升级HashMap，省内存；非线程安全(构建期写+只读) */
+                      ADAPTIVE_HASH;
 
 }

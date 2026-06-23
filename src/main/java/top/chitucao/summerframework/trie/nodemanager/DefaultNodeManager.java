@@ -8,9 +8,11 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import top.chitucao.summerframework.trie.configuration.property.Property;
+import top.chitucao.summerframework.trie.node.LeafNode;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.NodeFactory;
 import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
+import top.chitucao.summerframework.trie.node.extra.AbstractNamedMapNode;
 import top.chitucao.summerframework.trie.operation.Func;
 import top.chitucao.summerframework.trie.operation.Operation;
 import top.chitucao.summerframework.trie.operation.OperationRegistry;
@@ -81,7 +83,16 @@ public class DefaultNodeManager implements NodeManager {
         if (val == null) {
             throw new IllegalArgumentException("Cannot add child node with null value. Property: " + property1.name() + "Data: " + t.toString());
         }
-        Supplier<Node<K>> childSupplier = next() == null ? this::createNewNode : () -> next.createNewNode();
+        Supplier<Node<K>> childSupplier;
+        if (next() != null) {
+            childSupplier = () -> next.createNewNode();
+        } else if (parent instanceof AbstractNamedMapNode) {
+            // 父为命名节点时，其 putChild 会把子节点强转为命名节点回写名字，故叶子仍用常规节点避免类型不兼容
+            childSupplier = this::createNewNode;
+        } else {
+            // 叶子层：用无 children 容器的轻量叶子节点，省去每个叶子一个空 map 的内存开销
+            childSupplier = () -> new LeafNode<K>();
+        }
         K dictKey = property1.mappingOrCreateNodeKey(val);
         // 字典属性节点，需要加入树节点和字段值的映射关系
         if (property1.isDictProperty()) {

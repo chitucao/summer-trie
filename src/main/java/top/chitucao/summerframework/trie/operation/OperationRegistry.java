@@ -37,6 +37,8 @@ public class OperationRegistry {
         registerBaseHashMapOperations(NodeType.HASH_MAP.name());
         registerBaseHashMapOperations(NodeType.CONCURRENT_HASH_MAP.name());
         registerBaseHashMapOperations(NodeType.NAMED_HASH_MAP.name());
+        // AdaptiveNode 的 children() 返回 Map 视图，等值类算子与 HashMap 完全一致，直接复用
+        registerBaseHashMapOperations(NodeType.ADAPTIVE_HASH.name());
 
         // TreeMap
         registerBaseNavigableMapOperations(NodeType.TREE_MAP.name());
