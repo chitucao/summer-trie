@@ -56,6 +56,14 @@ public interface NodeManager {
     <T, R, K> K mappingDictKey(T t);
 
     /**
+     * 从数据中取出当前层的字段值（不分配字典key，用于插入前的非空校验）
+     *
+     * @param t 数据
+     * @return  字段值
+     */
+    <T, R> R fieldValue(T t);
+
+    /**
      * 创建新节点
      * 
      * @return  新节点

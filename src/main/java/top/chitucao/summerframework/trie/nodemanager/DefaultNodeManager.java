@@ -67,6 +67,13 @@ public class DefaultNodeManager implements NodeManager {
     }
 
     @Override
+    public <T, R> R fieldValue(T t) {
+        //noinspection unchecked
+        Property<T, R, ?> property1 = (Property<T, R, ?>) property;
+        return property1.mappingFieldValue(t);
+    }
+
+    @Override
     public <T, R, K> Node<K> addChildNode(Node<K> parent, T t) {
         @SuppressWarnings("unchecked")
         Property<T, R, K> property1 = (Property<T, R, K>) property;

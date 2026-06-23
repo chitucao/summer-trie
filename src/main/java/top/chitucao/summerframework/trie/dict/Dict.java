@@ -2,6 +2,7 @@ package top.chitucao.summerframework.trie.dict;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * 字段值字典
@@ -40,6 +41,17 @@ public interface Dict<R, K> {
      * @param fieldValue    字段值
      */
     void put(K nodeKey, R fieldValue);
+
+    /**
+     * 原子地获取或创建字段值对应的树节点key
+     * -1.若字段值已存在，返回已有的nodeKey；否则用keySupplier生成一个新key并登记后返回；
+     * -2.并发下保证同一个字段值只会分配一个nodeKey（适用于{@link top.chitucao.summerframework.trie.configuration.property.impl.AutoMappingProperty}的自增key分配）；
+     *
+     * @param fieldValue    字段值
+     * @param keySupplier   新key生成器（仅在该字段值首次出现时调用）
+     * @return              树节点key
+     */
+    K getOrCreateNodeKey(R fieldValue, Supplier<K> keySupplier);
 
     /**
      * 根据字段值查询对应的树节点值

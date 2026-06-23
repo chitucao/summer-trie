@@ -48,10 +48,9 @@ public class AutoMappingProperty<T, R> extends AbstractDictProperty<T, R, Number
 
     @Override
     public Number mappingOrCreateNodeKey(R field) {
-        if (dict.containsFieldValue(field)) {
-            return dict.getNodeKey(field);
-        }
-        return dictKeyAdder.nextKey();
+        // 原子地“获取或创建”自增key：杜绝原先 containsFieldValue 后再 nextKey 的 check-then-act 竞态
+        // （并发下同一字段值会被分配两个不同的key，导致 indexer/dict/counter 错乱、按值查询/删除查不全）
+        return dict.getOrCreateNodeKey(field, dictKeyAdder::nextKey);
     }
 
 }

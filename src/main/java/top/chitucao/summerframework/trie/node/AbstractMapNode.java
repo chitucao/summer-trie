@@ -1,7 +1,6 @@
 package top.chitucao.summerframework.trie.node;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -66,12 +65,9 @@ public abstract class AbstractMapNode<K> implements Node<K> {
      */
     @Override
     public Node<K> putChild(K key, Node<K> child) {
-        Node<K> existChild = children.get(key);
-        if (Objects.nonNull(existChild)) {
-            return existChild;
-        }
-        children.put(key, child);
-        return child;
+        // 原子化：在并发节点(ConcurrentHashMap/ConcurrentSkipListMap)下，computeIfAbsent 保证同一 key 只保留一个子节点，
+        // 杜绝原先 get 后 put 的 check-then-act 竞态（并发插同 key 会各自 new 节点互相覆盖、丢整棵子树）
+        return children.computeIfAbsent(key, k -> child);
     }
 
     /**
@@ -83,13 +79,8 @@ public abstract class AbstractMapNode<K> implements Node<K> {
      */
     @Override
     public Node<K> putChild(K key, Supplier<Node<K>> childSupplier) {
-        Node<K> existChild = children.get(key);
-        if (Objects.nonNull(existChild)) {
-            return existChild;
-        }
-        Node<K> child = childSupplier.get();
-        children.put(key, child);
-        return child;
+        // 原子化：仅在 key 不存在时才通过 supplier 创建子节点，避免并发各自创建节点互相覆盖
+        return children.computeIfAbsent(key, k -> childSupplier.get());
     }
 
     /**

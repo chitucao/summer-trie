@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * 基于两个HashMap的字典实现
@@ -79,7 +80,26 @@ public class HashMapDict<R, K> implements Dict<R, K> {
     public void put(K nodeKey, R fieldValue) {
         indexer.put(fieldValue, nodeKey);
         dict.put(nodeKey, fieldValue);
-        counter.put(nodeKey, counter.getOrDefault(nodeKey, 0) + 1);
+        // 原子自增计数，避免并发下 getOrDefault + put 读改写丢更新导致 size/删除判断出错
+        counter.merge(nodeKey, 1, Integer::sum);
+    }
+
+    /**
+     * 原子地获取或创建字段值对应的nodeKey
+     * -1.indexer.computeIfAbsent 保证并发下同一字段值只分配一个nodeKey，并在首次出现时同步登记 dict；
+     * -2.计数(counter)仍由 {@link #put} 在每次插入时累加，因此这里不触碰 counter；
+     *
+     * @param fieldValue    字段值
+     * @param keySupplier   新key生成器（仅首次出现该字段值时调用）
+     * @return              树节点key
+     */
+    @Override
+    public K getOrCreateNodeKey(R fieldValue, Supplier<K> keySupplier) {
+        return indexer.computeIfAbsent(fieldValue, f -> {
+            K nodeKey = keySupplier.get();
+            dict.put(nodeKey, f);
+            return nodeKey;
+        });
     }
 
     /**
@@ -123,13 +143,9 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public void decrNodeKeyCount(K nodeKey, int count) {
-        Integer nodeKeyCount = counter.get(nodeKey);
-        if (Objects.isNull(nodeKeyCount)) {
-            return;
-        }
-        nodeKeyCount -= count;
-        counter.put(nodeKey, nodeKeyCount);
-        if (removeDictIfNonCount && Objects.equals(nodeKeyCount, 0)) {
+        // 原子读改写，避免并发下计数丢更新；key不存在时computeIfPresent直接返回null不做处理
+        Integer nodeKeyCount = counter.computeIfPresent(nodeKey, (k, v) -> v - count);
+        if (removeDictIfNonCount && Objects.nonNull(nodeKeyCount) && nodeKeyCount <= 0) {
             removeNodeKey(nodeKey);
         }
     }

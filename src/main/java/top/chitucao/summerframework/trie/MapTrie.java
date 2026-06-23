@@ -90,6 +90,12 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public void insert(T t) {
+        // 先整行校验所有层级字段非空，避免中间某层字段为null抛异常后，前几层已落树/登记字典而残留“悬挂路径”（半条无叶子的脏路径，counter也对不上）
+        for (NodeManager nodeManager : nodeManagers) {
+            if (Objects.isNull(nodeManager.fieldValue(t))) {
+                throw new IllegalArgumentException("Cannot insert data with null field value. Property: " + nodeManager.property().name() + ", data: " + t);
+            }
+        }
         Node<?> cur = root;
         for (NodeManager nodeManager : nodeManagers) {
             cur = nodeManager.addChildNode(cur, t);
