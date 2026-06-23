@@ -528,27 +528,44 @@ public class MapTrie<T> implements Trie<T> {
      * @param path             路径
      */
     private void dfsSearch(Node<?> cur, NodeManager nodeManager, Map<String, Criterion> criteriaMap, int maxCriteriaLevel, Set<String> propertySet, int maxPropertyLevel,
-                           Map<String, Aggregation> aggregationMap, List<List<?>> result, List<?> path) {
+                           Map<String, Aggregation> aggregationMap, List<List<?>> result, List<Object> path) {
         int level = nodeManager.property().level();
         String propertyName = nodeManager.property().name();
         if (level > maxCriteriaLevel && level > maxPropertyLevel) {
-            result.add(path);
+            // 回溯写法下 path 是共享可变的，入结果时必须快照一份独立副本
+            result.add(new ArrayList<>(path));
             return;
         }
         Criterion criterion = criteriaMap.get(propertyName);
         Aggregation aggregation = aggregationMap.get(propertyName);
         Map<?, ? extends Node<?>> map = nodeManager.searchAndAgg(cur, criterion, aggregation);
         boolean isResultProperty = propertySet.contains(propertyName);
-        for (Map.Entry<?, ? extends Node<?>> entry : map.entrySet()) {
-            List<Object> newPath = new ArrayList<>(path);
+
+        // 尾层（最后一个字段层）：不再向下递归
+        if (Objects.isNull(nodeManager.next())) {
             if (isResultProperty) {
-                newPath.add(entry.getKey());
+                // 展示字段：同一父路径下的每个叶子都是一行，需遍历全部兄弟（修复原先只取首个entry就return导致的漏数据）
+                for (Map.Entry<?, ? extends Node<?>> entry : map.entrySet()) {
+                    path.add(entry.getKey());
+                    result.add(new ArrayList<>(path));
+                    path.remove(path.size() - 1);
+                }
+            } else if (!map.isEmpty()) {
+                // 仅过滤、非展示字段：只要有任意叶子命中，就产出一行当前路径（天然去重，避免重复行）
+                result.add(new ArrayList<>(path));
             }
-            if (Objects.isNull(nodeManager.next())) {
-                result.add(newPath);
-                return;
+            return;
+        }
+
+        // 非尾层：回溯下钻——进分支前压入展示字段key，递归返回后弹出，避免每节点复制整条路径
+        for (Map.Entry<?, ? extends Node<?>> entry : map.entrySet()) {
+            if (isResultProperty) {
+                path.add(entry.getKey());
             }
-            dfsSearch(entry.getValue(), nodeManager.next(), criteriaMap, maxCriteriaLevel, propertySet, maxPropertyLevel, aggregationMap, result, newPath);
+            dfsSearch(entry.getValue(), nodeManager.next(), criteriaMap, maxCriteriaLevel, propertySet, maxPropertyLevel, aggregationMap, result, path);
+            if (isResultProperty) {
+                path.remove(path.size() - 1);
+            }
         }
     }
 
