@@ -2,6 +2,7 @@ package top.chitucao.summerframework.trie.node;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
 /**
@@ -15,7 +16,15 @@ public abstract class AbstractMapNode<K> implements Node<K> {
     /**
      * 子节点映射表
      */
-    protected Map<K, Node<K>> children;
+    protected Map<K, Node<K>>                                       children;
+
+    /**
+     * 子树数据(记录)总数：叶子为1，内部节点为子树数据之和；由 insert 与精确删除沿路径原子维护
+     * -1.用 volatile int + AtomicIntegerFieldUpdater 而非 AtomicInteger，避免每个节点多一个对象的内存开销；
+     */
+    protected volatile int                                          subtreeSize;
+
+    private static final AtomicIntegerFieldUpdater<AbstractMapNode> SUBTREE_SIZE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(AbstractMapNode.class, "subtreeSize");
 
     /**
      * 子节点映射表
@@ -35,6 +44,16 @@ public abstract class AbstractMapNode<K> implements Node<K> {
     @Override
     public int childSize() {
         return children.size();
+    }
+
+    @Override
+    public int subtreeSize() {
+        return subtreeSize;
+    }
+
+    @Override
+    public void addSubtreeSize(int delta) {
+        SUBTREE_SIZE_UPDATER.addAndGet(this, delta);
     }
 
     /**

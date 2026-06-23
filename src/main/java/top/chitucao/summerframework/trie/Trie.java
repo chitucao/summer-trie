@@ -38,6 +38,16 @@ public interface Trie<T> {
     int getSize();
 
     /**
+     * 统计满足条件的数据条数
+     * -1.无需物化结果，下钻到条件最深层后按命中节点的子树规模累加，比 dataSearch().size() 更省；
+     * -2.size可靠时(未用过fastErase) 复杂度为下钻深度；用过fastErase后对命中节点按子树遍历统计，结果仍正确；
+     *
+     * @param criteria 查询条件
+     * @return         匹配的数据条数
+     */
+    int count(Criteria criteria);
+
+    /**
      * 插入数据
      *
      * @param t 数据

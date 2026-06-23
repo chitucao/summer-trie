@@ -42,6 +42,13 @@ public class MapTrie<T> implements Trie<T> {
      */
     private final Map<String, NodeManager> nodeManagerNameMap;
 
+    /**
+     * size是否可靠
+     * -1.subtreeSize 由 insert 与精确删除(normErase、erase(T))沿路径维护；
+     * -2.快速删除(fastErase)不遍历到叶子、无法维护，会把它置为false，此后 getSize/count 退化为遍历以保证正确；
+     */
+    private boolean                        sizeReliable = true;
+
     public MapTrie(Configuration configuration) {
         checkAndResolveConfiguration(configuration);
         this.configuration = configuration;
@@ -80,7 +87,50 @@ public class MapTrie<T> implements Trie<T> {
      */
     @Override
     public int getSize() {
+        // size 可靠时直接读根节点 subtreeSize，O(1)；否则(使用过fastErase导致不可靠)退化为整树遍历
+        if (sizeReliable) {
+            return root.subtreeSize();
+        }
         return doGetSize(root, 0, getDepth());
+    }
+
+    @Override
+    public int count(Criteria criteria) {
+        Map<String, Criterion> criterionMap = getCriterionMap(criteria);
+        int maxCriteriaLevel = getMaxCriteriaLevel(criterionMap);
+        // 无任何条件 → 全量
+        if (maxCriteriaLevel < 0) {
+            return getSize();
+        }
+        // 沿条件最深层逐层下钻并应用过滤，命中节点的子树即为匹配记录数
+        Iterator<NodeManager> iterator = nodeManagers.iterator();
+        Stream<Node<?>> cur = Stream.of(root);
+        for (int i = 0; i <= maxCriteriaLevel; i++) {
+            NodeManager nodeManager = iterator.next();
+            String propertyName = nodeManager.property().name();
+            cur = cur.flatMap(e -> nodeManager.search(e, criterionMap.get(propertyName)).values().stream());
+        }
+        final int level = maxCriteriaLevel;
+        if (sizeReliable) {
+            // O(下钻到条件最深层)，直接累加命中节点的 subtreeSize
+            return cur.mapToInt(Node::subtreeSize).sum();
+        }
+        // size不可靠(用过fastErase)时，对命中节点按子树遍历统计，保证结果正确
+        return cur.mapToInt(node -> recordsUnder(node, level)).sum();
+    }
+
+    /**
+     * 统计某节点子树下的记录数（兜底用，size不可靠时按子树遍历）
+     *
+     * @param node  节点
+     * @param level 该节点所在层级
+     * @return      记录数
+     */
+    private int recordsUnder(Node<?> node, int level) {
+        if (level == getDepth()) {
+            return 1;
+        }
+        return doGetSize(node, level + 1, getDepth());
     }
 
     /**
@@ -96,9 +146,25 @@ public class MapTrie<T> implements Trie<T> {
                 throw new IllegalArgumentException("Cannot insert data with null field value. Property: " + nodeManager.property().name() + ", data: " + t);
             }
         }
+        // 记录 root..叶子 整条路径节点；仅当本次插入确实新增了一个叶子(整条路径之前不存在)时，沿路径每个节点 subtreeSize +1
         Node<?> cur = root;
+        List<Node<?>> pathNodes = new ArrayList<>(nodeManagers.size() + 1);
+        pathNodes.add(root);
+        Node<?> leafParent = root;
+        int leafParentChildSizeBefore = root.childSize();
         for (NodeManager nodeManager : nodeManagers) {
+            if (Objects.isNull(nodeManager.next())) {
+                // nodeManager 是最后一层(叶子层)，cur 即叶子的父节点；记录创建叶子前父节点的子节点数，用于判断是否真的新增了叶子
+                leafParent = cur;
+                leafParentChildSizeBefore = cur.childSize();
+            }
             cur = nodeManager.addChildNode(cur, t);
+            pathNodes.add(cur);
+        }
+        if (leafParent.childSize() > leafParentChildSizeBefore) {
+            for (Node<?> pathNode : pathNodes) {
+                pathNode.addSubtreeSize(1);
+            }
         }
     }
 
@@ -154,6 +220,7 @@ public class MapTrie<T> implements Trie<T> {
                         property.getDict().removeNodeKey(dictKey);
                     }
                 }
+                cur.addSubtreeSize(-dictKeySet.size());
                 // 负数表示完全删除子节点，所以父节点中这个key也可以删除了
                 return -dictKeySet.size();
             } else {
@@ -161,6 +228,7 @@ public class MapTrie<T> implements Trie<T> {
                 for (Object dictKey : dictKeySet) {
                     nodeManager.removeChild((Node<Object>) cur, dictKey);
                 }
+                cur.addSubtreeSize(-dictKeySet.size());
                 return cur.childSize() == 0 ? -dictKeySet.size() : dictKeySet.size();
             }
         }
@@ -181,6 +249,8 @@ public class MapTrie<T> implements Trie<T> {
             }
             sum += removeCountAbs;
         }
+        // 维护 subtreeSize：当前节点子树共删除了 sum 条记录
+        cur.addSubtreeSize(-sum);
         return cur.children().isEmpty() ? -sum : sum;
     }
 
@@ -191,6 +261,8 @@ public class MapTrie<T> implements Trie<T> {
      * @param criteria 删除条件
      */
     private void fastErase(Criteria criteria) {
+        // 快速删除不遍历到叶子，无法维护 subtreeSize，标记 size 为不可靠（此后 getSize/count 退化为遍历）
+        sizeReliable = false;
         Map<String, Criterion> criterionMap = criteria.getAllCriterion();
         int maxCriteriaLevel = getMaxCriteriaLevel(criterionMap);
         Iterator<NodeManager> iterator = nodeManagers.iterator();
@@ -227,6 +299,11 @@ public class MapTrie<T> implements Trie<T> {
         }
         if (Objects.isNull(cur)) {
             return;
+        }
+
+        // 精确删除1条记录：沿路径(root..叶子父节点)每个节点 subtreeSize -1
+        for (Node<?> pathNode : parentNodeStack) {
+            pathNode.addSubtreeSize(-1);
         }
 
         // 删除节点
