@@ -12,6 +12,7 @@ import top.chitucao.summerframework.trie.node.LeafNode;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.NodeFactory;
 import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
+import top.chitucao.summerframework.trie.node.NodeType;
 import top.chitucao.summerframework.trie.node.extra.AbstractNamedMapNode;
 import top.chitucao.summerframework.trie.operation.Func;
 import top.chitucao.summerframework.trie.operation.Operation;
@@ -30,8 +31,16 @@ public class DefaultNodeManager implements NodeManager {
 
     protected Property<?, ?, ?> property;
 
+    /** 紧凑只读模式：哈希层节点改用 ADAPTIVE_HASH 紧凑节点 */
+    private final boolean       compactReadOnly;
+
     public DefaultNodeManager(Property<?, ?, ?> property) {
+        this(property, false);
+    }
+
+    public DefaultNodeManager(Property<?, ?, ?> property, boolean compactReadOnly) {
         this.property = property;
+        this.compactReadOnly = compactReadOnly;
     }
 
     @Override
@@ -52,7 +61,12 @@ public class DefaultNodeManager implements NodeManager {
 
     @Override
     public <K> Node<K> createNewNode() {
-        return NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newNode();
+        String nodeType = property.nodeType();
+        if (compactReadOnly && (NodeType.HASH_MAP.name().equals(nodeType) || NodeType.CONCURRENT_HASH_MAP.name().equals(nodeType))) {
+            // 紧凑只读模式：哈希层改用 ADAPTIVE_HASH(紧凑数组)；算子仍按原 nodeType 走，AdaptiveNode.children() 是 Map 视图，零改
+            nodeType = NodeType.ADAPTIVE_HASH.name();
+        }
+        return NodeFactoryRegistry.getInstance().getNodeFactory(nodeType).newNode();
     }
 
     @Override

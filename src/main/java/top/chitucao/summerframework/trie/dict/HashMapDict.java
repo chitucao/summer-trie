@@ -16,6 +16,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
 
     protected Map<K, R>       dict;
 
+    /** 反向索引 fieldValue->nodeKey：仅在 maintainIndexer=true 时分配；OneWayMapping 等不读 indexer 的场景为 null，省一份 map */
     protected Map<R, K>       indexer;
 
     /** 计数器：仅在 removeDictIfNonCount=true 时才分配并维护；否则为 null（计数不再被使用，size 由节点 subtreeSize 维护），省一份 map */
@@ -25,12 +26,20 @@ public class HashMapDict<R, K> implements Dict<R, K> {
     protected boolean         removeDictIfNonCount;
 
     public HashMapDict() {
-        this(false);
+        this(true, false);
     }
 
     public HashMapDict(boolean removeDictIfNonCount) {
+        this(true, removeDictIfNonCount);
+    }
+
+    /**
+     * @param maintainIndexer      是否维护反向索引(fieldValue-&gt;nodeKey)。OneWayMapping 等"正向用函数、反向用dict、erase用函数"的场景不读 indexer，可关掉省一份 map
+     * @param removeDictIfNonCount 字典计数归零时是否删除该字典
+     */
+    public HashMapDict(boolean maintainIndexer, boolean removeDictIfNonCount) {
         this.dict = new ConcurrentHashMap<>();
-        this.indexer = new ConcurrentHashMap<>();
+        this.indexer = maintainIndexer ? new ConcurrentHashMap<>() : null;
         this.removeDictIfNonCount = removeDictIfNonCount;
         this.counter = removeDictIfNonCount ? new ConcurrentHashMap<>() : null;
     }
@@ -43,9 +52,13 @@ public class HashMapDict<R, K> implements Dict<R, K> {
     }
 
     public HashMapDict(Integer capacity, boolean removeDictIfNonCount) {
+        this(capacity, true, removeDictIfNonCount);
+    }
+
+    public HashMapDict(Integer capacity, boolean maintainIndexer, boolean removeDictIfNonCount) {
         int initCap = (int) (capacity / 0.75f) + 1;
         this.dict = new ConcurrentHashMap<>(initCap, 1);
-        this.indexer = new ConcurrentHashMap<>(initCap, 1);
+        this.indexer = maintainIndexer ? new ConcurrentHashMap<>(initCap, 1) : null;
         this.removeDictIfNonCount = removeDictIfNonCount;
         this.counter = removeDictIfNonCount ? new ConcurrentHashMap<>(initCap, 1) : null;
     }
@@ -77,7 +90,8 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public Set<R> fieldValues() {
-        return indexer.keySet();
+        // 无 indexer 时从 dict 的 value 派生（关了 indexer 的 OneWayMapping 场景）
+        return indexer != null ? indexer.keySet() : new java.util.HashSet<>(dict.values());
     }
 
     /**
@@ -88,7 +102,9 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public void put(K nodeKey, R fieldValue) {
-        indexer.put(fieldValue, nodeKey);
+        if (indexer != null) {
+            indexer.put(fieldValue, nodeKey);
+        }
         dict.put(nodeKey, fieldValue);
         // 仅在启用 removeDictIfNonCount 时才维护计数（原子自增）；默认关闭时 counter 为 null，省去一份 map
         if (counter != null) {
@@ -107,6 +123,12 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public K getOrCreateNodeKey(R fieldValue, Supplier<K> keySupplier) {
+        // 无 indexer 时无法按值去重，直接分配新 key（仅出现在关了 indexer 的字典；OneWayMapping 实际不调用本方法）
+        if (indexer == null) {
+            K nodeKey = keySupplier.get();
+            dict.put(nodeKey, fieldValue);
+            return nodeKey;
+        }
         return indexer.computeIfAbsent(fieldValue, f -> {
             K nodeKey = keySupplier.get();
             dict.put(nodeKey, f);
@@ -122,7 +144,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public K getNodeKey(R fieldValue) {
-        return indexer.get(fieldValue);
+        return indexer == null ? null : indexer.get(fieldValue);
     }
 
     /**
@@ -144,7 +166,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
      */
     @Override
     public boolean containsFieldValue(R fieldValue) {
-        return indexer.containsKey(fieldValue);
+        return indexer != null && indexer.containsKey(fieldValue);
     }
 
     /**
@@ -174,7 +196,7 @@ public class HashMapDict<R, K> implements Dict<R, K> {
     @Override
     public void removeNodeKey(K nodeKey) {
         R fieldValue = dict.remove(nodeKey);
-        if (Objects.nonNull(fieldValue)) {
+        if (indexer != null && Objects.nonNull(fieldValue)) {
             indexer.remove(fieldValue);
         }
         if (counter != null) {

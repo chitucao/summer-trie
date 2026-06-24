@@ -4,6 +4,7 @@ import java.util.function.Function;
 
 import top.chitucao.summerframework.trie.configuration.property.AbstractDictProperty;
 import top.chitucao.summerframework.trie.dict.Dict;
+import top.chitucao.summerframework.trie.dict.HashMapDict;
 import top.chitucao.summerframework.trie.node.NodeType;
 
 /**
@@ -17,12 +18,13 @@ public class OneWayMappingProperty<T, R, K> extends AbstractDictProperty<T, R, K
     /** 指定如何将字段值映射成节点值 */
     private Function<R, K> field2NodeKeyMapper;
 
+    // OneWayMapping 正向用函数算 nodeKey、反向用 dict、erase 用函数，从不读 indexer；故默认用"无 indexer"的字典省内存
     public OneWayMappingProperty(String name) {
-        super(name);
+        super(name, NodeType.HASH_MAP.name(), new HashMapDict<>(false, false));
     }
 
     public OneWayMappingProperty(String name, String nodeType) {
-        super(name, nodeType);
+        super(name, nodeType, new HashMapDict<>(false, false));
     }
 
     public OneWayMappingProperty(String name, String nodeType, Dict<R, K> dict) {
@@ -30,7 +32,7 @@ public class OneWayMappingProperty<T, R, K> extends AbstractDictProperty<T, R, K
     }
 
     public OneWayMappingProperty(String name, NodeType nodeType) {
-        super(name, nodeType.name());
+        super(name, nodeType.name(), new HashMapDict<>(false, false));
     }
 
     public OneWayMappingProperty(String name, NodeType nodeType, Dict<R, K> dict) {

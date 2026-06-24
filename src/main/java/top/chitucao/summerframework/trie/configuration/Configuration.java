@@ -28,6 +28,12 @@ public class Configuration {
     /** 叶子节点是否存储数据 */
     private boolean                     leafNodeAsDataNode;
 
+    /**
+     * 紧凑只读模式：开启后哈希层节点自动改用 ADAPTIVE_HASH(紧凑数组,内存更省)、AutoMapping 默认字典自动改用 ArrayDict。
+     * -1.语义为"构建期单线程写 + 运行期只读/定期重建",非线程安全；需并发增量写请勿开启(继续用 CONCURRENT_* 节点)。
+     */
+    private boolean                     compactReadOnly;
+
     public Configuration() {
         this.level = 0;
         this.useFastErase = true;
@@ -82,5 +88,13 @@ public class Configuration {
 
     public void setLeafNodeAsDataNode(boolean leafNodeAsDataNode) {
         this.leafNodeAsDataNode = leafNodeAsDataNode;
+    }
+
+    public boolean isCompactReadOnly() {
+        return compactReadOnly;
+    }
+
+    public void setCompactReadOnly(boolean compactReadOnly) {
+        this.compactReadOnly = compactReadOnly;
     }
 }
