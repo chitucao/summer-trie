@@ -14,9 +14,21 @@ import top.chitucao.summerframework.trie.operation.OperationRegistry;
  */
 public class Criteria {
 
+    /**
+     * 未设置 limit 的占位值（表示不限制结果数量）
+     */
+    public static final int                     NO_LIMIT  = -1;
+
     private String                              key;
     private final LinkedHashMap<String, Object> criterion = new LinkedHashMap<>();
     private final List<Criteria>                criteriaChain;
+
+    /**
+     * 结果数量上限（limit 下推）
+     * -1.NO_LIMIT 表示不限制；
+     * -2.是整条查询级别的属性，不绑定具体字段；查询会在采集到 limit 条结果后提前终止遍历，避免全量物化；
+     */
+    private int                                 limit     = NO_LIMIT;
 
     public Criteria() {
         this.criteriaChain = new ArrayList<>();
@@ -118,6 +130,41 @@ public class Criteria {
     public Criteria func(Func func) {
         addCriterion(Operation.FUNC.getValue(), func);
         return this;
+    }
+
+    /**
+     * 设置结果数量上限（limit 下推）
+     * -1.作用于整条查询，查询采集到 limit 条结果后即停止遍历，避免全量物化；
+     * -2.链式调用即可，例如 {@code Criteria.where("city").eq("BJ").limit(10)}；
+     * -3.对 dataSearch / propertySearch / listSearch / treeSearch / queryAsTreeNode 生效；
+     *
+     * @param limit 结果上限，必须为正整数
+     * @return      条件本身（链式）
+     */
+    public Criteria limit(int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("limit must be positive, but was " + limit);
+        }
+        this.limit = limit;
+        return this;
+    }
+
+    /**
+     * 获取结果数量上限
+     * -1.先看当前条件节点，再扫描整条 criteriaChain，使 limit 在链式任意节点设置都能被读到；
+     *
+     * @return 结果上限，未设置时返回 {@link #NO_LIMIT}
+     */
+    public int getLimit() {
+        if (this.limit > 0) {
+            return this.limit;
+        }
+        for (Criteria criteria : criteriaChain) {
+            if (criteria.limit > 0) {
+                return criteria.limit;
+            }
+        }
+        return NO_LIMIT;
     }
 
     /**

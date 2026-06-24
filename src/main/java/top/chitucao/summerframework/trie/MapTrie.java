@@ -358,7 +358,7 @@ public class MapTrie<T> implements Trie<T> {
         Map<String, Criterion> criterion = criteria.getAllCriterion();
 
         int maxCriteriaLevel = getMaxCriteriaLevel(criteria.getAllCriterion());
-        return !this.levelSearch(criterion, new Aggregations(), maxCriteriaLevel).isEmpty();
+        return !this.levelSearch(criterion, new Aggregations(), maxCriteriaLevel, Integer.MAX_VALUE).isEmpty();
     }
 
     /**
@@ -394,7 +394,8 @@ public class MapTrie<T> implements Trie<T> {
             throw new IllegalStateException("Leaf node is not a data node, Data search is not supported");
         }
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        return (List<T>) tailNodeManager().mappingDictValues(levelSearch(criterionMap, new Aggregations(), tailNodeManager().property().level())).collect(Collectors.toList());
+        return (List<T>) tailNodeManager().mappingDictValues(levelSearch(criterionMap, new Aggregations(), tailNodeManager().property().level(), resolveLimit(criteria)))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -409,8 +410,8 @@ public class MapTrie<T> implements Trie<T> {
     public <R> List<R> propertySearch(Criteria criteria, String property) {
         propertyCheck(property);
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        return (List<R>) nodeManagerNameMap.get(property).mappingDictValues(levelSearch(criterionMap, new Aggregations(), nodeManagerNameMap.get(property).property().level()))
-            .collect(Collectors.toList());
+        return (List<R>) nodeManagerNameMap.get(property)
+            .mappingDictValues(levelSearch(criterionMap, new Aggregations(), nodeManagerNameMap.get(property).property().level(), resolveLimit(criteria))).collect(Collectors.toList());
     }
 
     /**
@@ -420,9 +421,10 @@ public class MapTrie<T> implements Trie<T> {
      * @param criterionMap      查询条件
      * @param aggregations      聚合条件
      * @param level             展示字段层级
+     * @param limit             结果数量上限（去重后），Integer.MAX_VALUE 表示不限制
      * @return 展示层级的字典key
      */
-    private Set<?> levelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, int level) {
+    private Set<?> levelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, int level, int limit) {
         Iterator<NodeManager> iterator = nodeManagers.iterator();
         Map<String, Aggregation> aggregationMap = aggregations.getAggregationMap();
         // 1.查询到展示字段前
@@ -443,16 +445,46 @@ public class MapTrie<T> implements Trie<T> {
         int maxCriteriaLevel = this.getMaxCriteriaLevel(criterionMap);
         if (levelManager.property().level() >= maxCriteriaLevel) {
             // 3.1 没有后续字段过滤条件，可以返回了
-            return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
+            if (limit == Integer.MAX_VALUE) {
+                return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
+            }
+            // limit 下推：采集到 limit 个去重key即停，用迭代器手动拉取以支持提前结束，避免全量物化
+            Set<Object> limitedKeys = new LinkedHashSet<>();
+            Iterator<? extends Map<?, ? extends Node<?>>> mapIterator = curChildMap.iterator();
+            while (mapIterator.hasNext() && limitedKeys.size() < limit) {
+                for (Object key : mapIterator.next().keySet()) {
+                    limitedKeys.add(key);
+                    if (limitedKeys.size() >= limit) {
+                        break;
+                    }
+                }
+            }
+            return limitedKeys;
         } else {
             // 3.2 还有后续字段过滤条件，判断任意子节点是否满足后续过滤条件
             Set<Object> keys = new HashSet<>();
             NodeManager next = iterator.next();
-            curChildMap.forEach(map -> map.forEach((k, v) -> {
-                if (!keys.contains(k) && childrenAnyMatch(v, next, criterionMap, aggregationMap, maxCriteriaLevel)) {
-                    keys.add(k);
+            if (limit == Integer.MAX_VALUE) {
+                curChildMap.forEach(map -> map.forEach((k, v) -> {
+                    if (!keys.contains(k) && childrenAnyMatch(v, next, criterionMap, aggregationMap, maxCriteriaLevel)) {
+                        keys.add(k);
+                    }
+                }));
+                return keys;
+            }
+            // limit 下推：命中 limit 个去重key即停
+            Iterator<? extends Map<?, ? extends Node<?>>> mapIterator = curChildMap.iterator();
+            while (mapIterator.hasNext() && keys.size() < limit) {
+                for (Map.Entry<?, ? extends Node<?>> entry : mapIterator.next().entrySet()) {
+                    Object k = entry.getKey();
+                    if (!keys.contains(k) && childrenAnyMatch(entry.getValue(), next, criterionMap, aggregationMap, maxCriteriaLevel)) {
+                        keys.add(k);
+                        if (keys.size() >= limit) {
+                            break;
+                        }
+                    }
                 }
-            }));
+            }
             return keys;
         }
     }
@@ -495,7 +527,7 @@ public class MapTrie<T> implements Trie<T> {
         resultBuilderCheck(resultBuilder);
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
 
-        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, resultBuilder.getSetterMap().keySet().toArray(new String[0]));
+        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, resolveLimit(criteria), resultBuilder.getSetterMap().keySet().toArray(new String[0]));
         if (dataList.isEmpty()) {
             return new ArrayList<>();
         }
@@ -541,7 +573,7 @@ public class MapTrie<T> implements Trie<T> {
         }
 
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, properties);
+        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, resolveLimit(criteria), properties);
         if (dataList.isEmpty()) {
             return new HashMap<>();
         }
@@ -580,10 +612,11 @@ public class MapTrie<T> implements Trie<T> {
      *
      * @param criterionMap      查询条件
      * @param aggregations      聚合条件
+     * @param limit             结果行数上限（平铺后的行数），Integer.MAX_VALUE 表示不限制
      * @param properties        要展示的字段列表
      * @return 平铺的列表数据
      */
-    private List<List<?>> multiLevelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, String... properties) {
+    private List<List<?>> multiLevelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, int limit, String... properties) {
         if (properties == null || properties.length == 0) {
             return new ArrayList<>();
         }
@@ -600,7 +633,7 @@ public class MapTrie<T> implements Trie<T> {
 
         List<List<?>> result = new ArrayList<>();
         dfsSearch(this.root, headNodeManager(), criterionMap, maxCriteriaLevel, new HashSet<>(Arrays.asList(properties)), maxPropertyLevel, aggregations.getAggregationMap(),
-            result, new ArrayList<>());
+            result, new ArrayList<>(), limit);
 
         return result;
     }
@@ -616,9 +649,14 @@ public class MapTrie<T> implements Trie<T> {
      * @param maxPropertyLevel 展示字段最大深度
      * @param result           路径列表
      * @param path             路径
+     * @param limit            结果行数上限，Integer.MAX_VALUE 表示不限制；达到上限即提前终止遍历（limit 下推）
      */
     private void dfsSearch(Node<?> cur, NodeManager nodeManager, Map<String, Criterion> criteriaMap, int maxCriteriaLevel, Set<String> propertySet, int maxPropertyLevel,
-                           Map<String, Aggregation> aggregationMap, List<List<?>> result, List<Object> path) {
+                           Map<String, Aggregation> aggregationMap, List<List<?>> result, List<Object> path, int limit) {
+        // limit 下推：结果已达上限，无需继续遍历任何分支（兄弟节点凑满后递归向上逐层短路）
+        if (result.size() >= limit) {
+            return;
+        }
         int level = nodeManager.property().level();
         String propertyName = nodeManager.property().name();
         if (level > maxCriteriaLevel && level > maxPropertyLevel) {
@@ -639,6 +677,10 @@ public class MapTrie<T> implements Trie<T> {
                     path.add(entry.getKey());
                     result.add(new ArrayList<>(path));
                     path.remove(path.size() - 1);
+                    // limit 下推：尾层逐个叶子产出，达上限即停止遍历兄弟叶子
+                    if (result.size() >= limit) {
+                        return;
+                    }
                 }
             } else if (!map.isEmpty()) {
                 // 仅过滤、非展示字段：只要有任意叶子命中，就产出一行当前路径（天然去重，避免重复行）
@@ -652,9 +694,13 @@ public class MapTrie<T> implements Trie<T> {
             if (isResultProperty) {
                 path.add(entry.getKey());
             }
-            dfsSearch(entry.getValue(), nodeManager.next(), criteriaMap, maxCriteriaLevel, propertySet, maxPropertyLevel, aggregationMap, result, path);
+            dfsSearch(entry.getValue(), nodeManager.next(), criteriaMap, maxCriteriaLevel, propertySet, maxPropertyLevel, aggregationMap, result, path, limit);
             if (isResultProperty) {
                 path.remove(path.size() - 1);
+            }
+            // limit 下推：该子树已凑满上限，停止遍历后续兄弟分支
+            if (result.size() >= limit) {
+                return;
             }
         }
     }
@@ -704,7 +750,7 @@ public class MapTrie<T> implements Trie<T> {
         }
 
         Map<String, Criterion> criterionMap = getCriterionMap(criteria);
-        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, properties);
+        List<List<?>> dataList = multiLevelSearch(criterionMap, aggregations, resolveLimit(criteria), properties);
         if (dataList.isEmpty()) {
             return root;
         }
@@ -943,6 +989,21 @@ public class MapTrie<T> implements Trie<T> {
      */
     private static Map<String, Criterion> getCriterionMap(Criteria criteria) {
         return Objects.isNull(criteria) ? new HashMap<>() : criteria.getAllCriterion();
+    }
+
+    /**
+     * 解析结果数量上限（limit 下推）
+     * -1.未设置或 criteria 为空时返回 Integer.MAX_VALUE（等价不限制），调用方据此提前终止遍历；
+     *
+     * @param criteria 查询条件
+     * @return         有效上限，无限制时为 Integer.MAX_VALUE
+     */
+    private static int resolveLimit(Criteria criteria) {
+        if (Objects.isNull(criteria)) {
+            return Integer.MAX_VALUE;
+        }
+        int limit = criteria.getLimit();
+        return limit > 0 ? limit : Integer.MAX_VALUE;
     }
 
     /**

@@ -102,6 +102,12 @@ public class TrieBenchmark {
     /** 代表性查询：固定出发城市 + 价格区间 + 舱等 */
     private Criteria     query;
 
+    /** 宽查询：仅按 cabinClass 过滤，命中结果集很大(约 N/4)，用于演示 limit 下推收益 */
+    private Criteria     broadQuery;
+
+    /** 宽查询 + limit=10：只取前 10 条，验证“命中即停、不全量物化” */
+    private Criteria     broadQueryLimit10;
+
     static Trie<Flight> buildTrie() {
         return buildTrie(NodeType.CONCURRENT_HASH_MAP, false);
     }
@@ -159,6 +165,8 @@ public class TrieBenchmark {
         dirtyTrie.erase(new Criteria().and("cabinClass").eq("__NONE__"));
         adaptiveTrie = buildTrie(NodeType.ADAPTIVE_HASH);
         query = buildQuery();
+        broadQuery = new Criteria().and("cabinClass").eq("ECON");
+        broadQueryLimit10 = new Criteria().and("cabinClass").eq("ECON").limit(10);
     }
 
     /** T2 验证点：分组树查询(看 GC 分配率，回溯后应显著低于"每节点复制路径") */
@@ -171,6 +179,30 @@ public class TrieBenchmark {
     @Benchmark
     public List<Flight> dataSearch() {
         return trie.dataSearch(query);
+    }
+
+    /** limit 下推：宽查询全量物化（对照，约 N/4 条结果） */
+    @Benchmark
+    public List<Flight> dataSearch_broad_full() {
+        return trie.dataSearch(broadQuery);
+    }
+
+    /** limit 下推：宽查询 limit=10，命中即停，避免全量物化 */
+    @Benchmark
+    public List<Flight> dataSearch_broad_limit10() {
+        return trie.dataSearch(broadQueryLimit10);
+    }
+
+    /** limit 下推：分组树宽查询全量（对照） */
+    @Benchmark
+    public Object treeSearch_broad_full() {
+        return trie.treeSearch(broadQuery, new Aggregations(), "arrCity", "data");
+    }
+
+    /** limit 下推：分组树宽查询 limit=10，命中即停 */
+    @Benchmark
+    public Object treeSearch_broad_limit10() {
+        return trie.treeSearch(broadQueryLimit10, new Aggregations(), "arrCity", "data");
     }
 
     /** T4：count(Criteria) 不物化对象 */
@@ -215,10 +247,14 @@ public class TrieBenchmark {
         return adaptiveTrie.dataSearch(query);
     }
 
-    /** 在 IDE/maven 里直接跑全部基准（含 GC 分配分析器） */
+    /**
+     * 在 IDE/maven 里直接跑基准（含 GC 分配分析器）。
+     * -1.默认跑全部；可用 -Djmh.include=&lt;正则&gt; 聚焦部分基准，例如 -Djmh.include=broad 只跑 limit 下推对照。
+     */
     @Test
     public void runJmh() throws RunnerException {
-        Options opt = new OptionsBuilder().include(TrieBenchmark.class.getSimpleName()).addProfiler(GCProfiler.class).build();
+        String include = System.getProperty("jmh.include", TrieBenchmark.class.getSimpleName());
+        Options opt = new OptionsBuilder().include(include).addProfiler(GCProfiler.class).build();
         new Runner(opt).run();
     }
 }
