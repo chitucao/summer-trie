@@ -425,9 +425,89 @@ public class MapTrie<T> implements Trie<T> {
      * @return 展示层级的字典key
      */
     private Set<?> levelSearch(Map<String, Criterion> criterionMap, Aggregations aggregations, int level, int limit) {
-        Iterator<NodeManager> iterator = nodeManagers.iterator();
         Map<String, Aggregation> aggregationMap = aggregations.getAggregationMap();
-        // 1.查询到展示字段前
+        int maxCriteriaLevel = this.getMaxCriteriaLevel(criterionMap);
+        if (limit == Integer.MAX_VALUE) {
+            // 常规查询(无 limit)：全程显式遍历，消除每层 flatMap / childrenAnyMatch 的 Stream 中间对象 churn
+            return levelSearchAll(criterionMap, aggregationMap, level, maxCriteriaLevel);
+        }
+        // 带 limit：保留惰性 Stream 下钻 + 迭代器提前终止（limit 下推，避免全量物化）
+        return levelSearchLimited(criterionMap, aggregationMap, level, maxCriteriaLevel, limit);
+    }
+
+    /**
+     * 单层查询·常规(无 limit)——显式遍历版
+     * -1.逐层下钻、展示层取key，全程用普通循环遍历 {@code map.values()/entrySet()}，避免在查询热路径上每层 flatMap、
+     *    每节点 anyMatch 都新建一组 Stream 中间对象（Stream 阶段对象/Spliterator/lambda 闭包）造成 GC churn；
+     * -2.语义与原 Stream 写法完全等价（命中节点集合一致，结果为去重 key 集合，顺序无关）。
+     *
+     * @param criterionMap     查询条件
+     * @param aggregationMap   聚合条件
+     * @param level            展示字段层级
+     * @param maxCriteriaLevel 查询条件最大深度
+     * @return 展示层级的字典key集合
+     */
+    private Set<?> levelSearchAll(Map<String, Criterion> criterionMap, Map<String, Aggregation> aggregationMap, int level, int maxCriteriaLevel) {
+        Iterator<NodeManager> iterator = nodeManagers.iterator();
+        // 1.下钻到展示字段前一层
+        List<Node<?>> cur = new ArrayList<>();
+        cur.add(root);
+        for (int i = 0; i < level; i++) {
+            NodeManager nodeManager = iterator.next();
+            String propertyName = nodeManager.property().name();
+            Criterion criterion = criterionMap.get(propertyName);
+            Aggregation aggregation = aggregationMap.get(propertyName);
+            List<Node<?>> next = new ArrayList<>();
+            for (Node<?> node : cur) {
+                next.addAll(nodeManager.searchAndAgg(node, criterion, aggregation).values());
+            }
+            cur = next;
+        }
+
+        // 2.展示字段层
+        NodeManager levelManager = iterator.next();
+        String levelPropertyName = levelManager.property().name();
+        Criterion levelCriterion = criterionMap.get(levelPropertyName);
+        Aggregation levelAggregation = aggregationMap.get(levelPropertyName);
+
+        // 3.判断是否还有展示字段后续字段的过滤条件
+        if (levelManager.property().level() >= maxCriteriaLevel) {
+            // 3.1 没有后续过滤条件，直接收集展示层全部去重key
+            Set<Object> keys = new HashSet<>();
+            for (Node<?> node : cur) {
+                keys.addAll(levelManager.searchAndAgg(node, levelCriterion, levelAggregation).keySet());
+            }
+            return keys;
+        }
+        // 3.2 还有后续过滤条件，任意子孙节点命中才计入该展示key
+        Set<Object> keys = new HashSet<>();
+        NodeManager next = iterator.next();
+        for (Node<?> node : cur) {
+            for (Map.Entry<?, ? extends Node<?>> entry : levelManager.searchAndAgg(node, levelCriterion, levelAggregation).entrySet()) {
+                Object k = entry.getKey();
+                if (!keys.contains(k) && childrenAnyMatch(entry.getValue(), next, criterionMap, aggregationMap, maxCriteriaLevel)) {
+                    keys.add(k);
+                }
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * 单层查询·带 limit——惰性 Stream 下推版
+     * -1.保留 Stream 惰性下钻 + 迭代器手动拉取，使「采集到 limit 个去重key即停」能反向短路上游逐层下钻，避免全量物化（limit 下推）；
+     * -2.此路径刻意不改成 eager 遍历——eager 会丧失惰性、令 limit 退化为全量下钻，抵消 limit 下推收益。
+     *
+     * @param criterionMap     查询条件
+     * @param aggregationMap   聚合条件
+     * @param level            展示字段层级
+     * @param maxCriteriaLevel 查询条件最大深度
+     * @param limit            结果数量上限（去重后）
+     * @return 展示层级的字典key集合（至多 limit 个）
+     */
+    private Set<?> levelSearchLimited(Map<String, Criterion> criterionMap, Map<String, Aggregation> aggregationMap, int level, int maxCriteriaLevel, int limit) {
+        Iterator<NodeManager> iterator = nodeManagers.iterator();
+        // 1.查询到展示字段前（惰性）
         Stream<Node<?>> cur = Stream.of(root);
         for (int i = 0; i < level; i++) {
             NodeManager nodeManager = iterator.next();
@@ -435,20 +515,15 @@ public class MapTrie<T> implements Trie<T> {
             cur = cur.flatMap(e -> nodeManager.searchAndAgg(e, criterionMap.get(propertyName), aggregationMap.get(propertyName)).values().stream());
         }
 
-        // 2.查询展示字段
+        // 2.查询展示字段（惰性）
         NodeManager levelManager = iterator.next();
         String levelPropertyName = levelManager.property().name();
         Stream<? extends Map<?, ? extends Node<?>>> curChildMap = cur
             .map(node -> levelManager.searchAndAgg(node, criterionMap.get(levelPropertyName), aggregationMap.get(levelPropertyName))).filter(e -> !e.isEmpty());
 
         // 3.判断是否还有展示字段后续字段的过滤条件
-        int maxCriteriaLevel = this.getMaxCriteriaLevel(criterionMap);
         if (levelManager.property().level() >= maxCriteriaLevel) {
-            // 3.1 没有后续字段过滤条件，可以返回了
-            if (limit == Integer.MAX_VALUE) {
-                return curChildMap.flatMap(childMap -> childMap.keySet().stream()).collect(Collectors.toSet());
-            }
-            // limit 下推：采集到 limit 个去重key即停，用迭代器手动拉取以支持提前结束，避免全量物化
+            // 3.1 没有后续过滤条件：采集到 limit 个去重key即停，迭代器手动拉取以支持提前结束
             Set<Object> limitedKeys = new LinkedHashSet<>();
             Iterator<? extends Map<?, ? extends Node<?>>> mapIterator = curChildMap.iterator();
             while (mapIterator.hasNext() && limitedKeys.size() < limit) {
@@ -460,33 +535,23 @@ public class MapTrie<T> implements Trie<T> {
                 }
             }
             return limitedKeys;
-        } else {
-            // 3.2 还有后续字段过滤条件，判断任意子节点是否满足后续过滤条件
-            Set<Object> keys = new HashSet<>();
-            NodeManager next = iterator.next();
-            if (limit == Integer.MAX_VALUE) {
-                curChildMap.forEach(map -> map.forEach((k, v) -> {
-                    if (!keys.contains(k) && childrenAnyMatch(v, next, criterionMap, aggregationMap, maxCriteriaLevel)) {
-                        keys.add(k);
-                    }
-                }));
-                return keys;
-            }
-            // limit 下推：命中 limit 个去重key即停
-            Iterator<? extends Map<?, ? extends Node<?>>> mapIterator = curChildMap.iterator();
-            while (mapIterator.hasNext() && keys.size() < limit) {
-                for (Map.Entry<?, ? extends Node<?>> entry : mapIterator.next().entrySet()) {
-                    Object k = entry.getKey();
-                    if (!keys.contains(k) && childrenAnyMatch(entry.getValue(), next, criterionMap, aggregationMap, maxCriteriaLevel)) {
-                        keys.add(k);
-                        if (keys.size() >= limit) {
-                            break;
-                        }
+        }
+        // 3.2 还有后续过滤条件：命中 limit 个去重key即停
+        Set<Object> keys = new HashSet<>();
+        NodeManager next = iterator.next();
+        Iterator<? extends Map<?, ? extends Node<?>>> mapIterator = curChildMap.iterator();
+        while (mapIterator.hasNext() && keys.size() < limit) {
+            for (Map.Entry<?, ? extends Node<?>> entry : mapIterator.next().entrySet()) {
+                Object k = entry.getKey();
+                if (!keys.contains(k) && childrenAnyMatch(entry.getValue(), next, criterionMap, aggregationMap, maxCriteriaLevel)) {
+                    keys.add(k);
+                    if (keys.size() >= limit) {
+                        break;
                     }
                 }
             }
-            return keys;
         }
+        return keys;
     }
 
     /**
@@ -506,10 +571,16 @@ public class MapTrie<T> implements Trie<T> {
         if (nodeManager.property().level() == maxCriteriaLevel) {
             return nodeManager.contains(node, criterion);
         }
-        Stream<Node<?>> cur = Stream.of(node);
-        cur = cur.flatMap(e -> nodeManager.searchAndAgg(e, criterion, aggregationMap.get(propertyName)).values().stream());
-
-        return cur.anyMatch(childNode -> this.childrenAnyMatch(childNode, nodeManager.next(), criteriaMap, aggregationMap, maxCriteriaLevel));
+        // 显式遍历命中子节点并递归，命中即短路返回；避免原 Stream.of(node).flatMap(...).anyMatch(...) 每访问一个节点
+        // 就新建一组 Stream 中间对象——这是宽展示+深过滤场景下查询热路径的 GC churn 重灾区
+        Map<?, ? extends Node<?>> childMap = nodeManager.searchAndAgg(node, criterion, aggregationMap.get(propertyName));
+        NodeManager next = nodeManager.next();
+        for (Node<?> childNode : childMap.values()) {
+            if (childrenAnyMatch(childNode, next, criteriaMap, aggregationMap, maxCriteriaLevel)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

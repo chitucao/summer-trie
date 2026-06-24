@@ -31,7 +31,14 @@ import top.chitucao.summerframework.trie.query.Criteria;
 /**
  * JMH 查询/计数基准：量化 T2(dfsSearch回溯，看分配率) 与 T4(count、getSize O(1)) 的收益。
  * <p>
- * 运行：mvn test -Dtest=TrieBenchmark#runJmh （在 runJmh 里用 OptionsBuilder 启动，含 GC 分配分析器）
+ * 另含 <b>P1 常规查询基线</b>（方法名前缀 {@code p1_}）：为"levelSearch/childrenAnyMatch 去 Stream churn"改造提供
+ * 改造前后对照。关注 GCProfiler 的 {@code gc.alloc.rate.norm}(B/op)——
+ * 用以判断查询热路径的分配大头到底是 <i>Stream churn</i>（levelSearch flatMap / childrenAnyMatch 递归的 Stream 中间对象）
+ * 还是 <i>每层 newChildren 拷贝命中项</i>（searchAndAgg→Operate.query，对应 T3 中间层免拷贝）。
+ * 若 Stream churn 占比小，则应优先投 T3 而非仅去 Stream。
+ * <p>
+ * 运行：mvn test -Dtest=TrieBenchmark#runJmh （在 runJmh 里用 OptionsBuilder 启动，含 GC 分配分析器）；
+ * 仅跑 P1 基线：mvn test -Dtest=TrieBenchmark#runJmh -Djmh.include=p1_
  *
  * @author 资深全栈架构师
  */
@@ -108,6 +115,9 @@ public class TrieBenchmark {
     /** 宽查询 + limit=10：只取前 10 条，验证“命中即停、不全量物化” */
     private Criteria     broadQueryLimit10;
 
+    /** P1基线·childrenAnyMatch 宽版：过滤条件只在最深的 arrCity 层，展示浅层 depDate → 每个展示键都递归下钻判断后代命中，Stream churn 最重 */
+    private Criteria     anyMatchBroadQuery;
+
     static Trie<Flight> buildTrie() {
         return buildTrie(NodeType.CONCURRENT_HASH_MAP, false);
     }
@@ -167,6 +177,7 @@ public class TrieBenchmark {
         query = buildQuery();
         broadQuery = new Criteria().and("cabinClass").eq("ECON");
         broadQueryLimit10 = new Criteria().and("cabinClass").eq("ECON").limit(10);
+        anyMatchBroadQuery = new Criteria().and("arrCity").eq("A49");
     }
 
     /** T2 验证点：分组树查询(看 GC 分配率，回溯后应显著低于"每节点复制路径") */
@@ -245,6 +256,37 @@ public class TrieBenchmark {
     @Benchmark
     public List<Flight> dataSearch_adaptive() {
         return adaptiveTrie.dataSearch(query);
+    }
+
+    //---------------------------------------- P1 常规查询基线（去 Stream churn 前的对照） ----------------------------------------
+
+    /**
+     * P1基线·levelSearch 直返分支(3.1)：展示 arrCity 处于最深过滤条件(depCity)之下/同层，
+     * 无后续过滤 → 不触发 childrenAnyMatch，只走 levelSearch 主体的 Stream.flatMap 逐层收窄 + 末层取 keySet。
+     * 量这条可看 levelSearch 主循环本身的 Stream 开销 + 每层 newChildren 拷贝。
+     */
+    @Benchmark
+    public List<String> p1_propertySearch_simple() {
+        return trie.propertySearch(query, "arrCity");
+    }
+
+    /**
+     * P1基线·childrenAnyMatch 分支(3.2) 窄版：展示顶层 cabinClass，过滤条件落在更深的 price+depCity，
+     * 展示层 cabinClass.eq("ECON") 只剩 1 个键 → 触发 1 次 childrenAnyMatch 递归(depDate→price→depCity)，命中即短路。
+     */
+    @Benchmark
+    public List<String> p1_propertySearch_anyMatch_narrow() {
+        return trie.propertySearch(query, "cabinClass");
+    }
+
+    /**
+     * P1基线·childrenAnyMatch 分支(3.2) 宽版【Stream churn 重灾区】：展示浅层 depDate(约60个键)，
+     * 过滤条件只在最深的 arrCity → 每个 depDate 键都要 childrenAnyMatch 递归下钻 price→depCity→arrCity，
+     * 每节点新建一组 Stream(of/flatMap/anyMatch) 中间对象。这是 P1 去 Stream 收益最该出现的地方。
+     */
+    @Benchmark
+    public List<Integer> p1_propertySearch_anyMatch_broad() {
+        return trie.propertySearch(anyMatchBroadQuery, "depDate");
     }
 
     /**
