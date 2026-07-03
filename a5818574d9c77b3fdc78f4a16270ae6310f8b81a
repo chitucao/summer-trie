@@ -1,0 +1,14 @@
+src/main/java/top/chitucao/summerframework/trie/MapTrie.java
+  h_46f82bbb3feb3f 93-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "a5818574d9c77b3fdc78f4a16270ae6310f8b81a",
+  "prompts": {},
+  "humans": {
+    "h_46f82bbb3feb3f": {
+      "author": "chitucao <2469589812@qq.com>"
+    }
+  }
+}
