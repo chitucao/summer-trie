@@ -1,0 +1,14 @@
+src/main/java/top/chitucao/summerframework/trie/node/AbstractMapNode.java
+  h_46f82bbb3feb3f 5,19-27,49-56,58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "2dd2f5f5faa5eb0f968e121fb57b57f29340711f",
+  "prompts": {},
+  "humans": {
+    "h_46f82bbb3feb3f": {
+      "author": "chitucao <2469589812@qq.com>"
+    }
+  }
+}
