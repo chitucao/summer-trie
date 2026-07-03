@@ -1,0 +1,47 @@
+pom.xml
+  s_8b5336c3db4e0c::t_a1517cb74c52ff 77-78,117-136
+src/main/java/top/chitucao/summerframework/trie/MapTrie.java
+  s_8b5336c3db4e0c::t_607130d9b395dc 243-251
+src/main/java/top/chitucao/summerframework/trie/dict/ArrayDict.java
+  s_8b5336c3db4e0c::t_8d73ac683343b1 1-180
+src/main/java/top/chitucao/summerframework/trie/dict/HashMapDict.java
+  s_8b5336c3db4e0c::t_f15c706440cc35 21,28-31,34-35,42-50,93-96,158-161,180-182
+src/main/java/top/chitucao/summerframework/trie/node/AdaptiveNode.java
+  s_8b5336c3db4e0c::t_1beb8e7d7eaafa 1-308
+src/main/java/top/chitucao/summerframework/trie/node/LeafNode.java
+  s_8b5336c3db4e0c::t_234f70980a905e 1-69
+src/main/java/top/chitucao/summerframework/trie/node/NodeFactoryRegistry.java
+  s_8b5336c3db4e0c::t_1d714ddea99868 298-325
+src/main/java/top/chitucao/summerframework/trie/node/NodeType.java
+  s_8b5336c3db4e0c::t_a1ea90281f510a 29-32
+src/main/java/top/chitucao/summerframework/trie/nodemanager/DefaultNodeManager.java
+  s_8b5336c3db4e0c::t_d827667139481c 11,15,86-95
+src/main/java/top/chitucao/summerframework/trie/operation/OperationRegistry.java
+  s_8b5336c3db4e0c::t_c3beb7883b7357 40-41
+src/test/java/top/chitucao/summerframework/trie/TrieAdaptiveNodeTest.java
+  s_8b5336c3db4e0c::t_ee8f07581c78b0 1-129
+src/test/java/top/chitucao/summerframework/trie/TrieArrayDictTest.java
+  s_8b5336c3db4e0c::t_8fad9015807991 1-109
+src/test/java/top/chitucao/summerframework/trie/TrieBenchmark.java
+  s_8b5336c3db4e0c::t_599a2787bcaf6a 1-224
+src/test/java/top/chitucao/summerframework/trie/TrieCountTest.java
+  s_8b5336c3db4e0c::t_1b21a6074d5f21 1-166
+src/test/java/top/chitucao/summerframework/trie/TrieMemoryReport.java
+  s_8b5336c3db4e0c::t_583a22548a475e 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "4a1a2bac5a3065743aca768bce9982e5ae5fe1b6",
+  "prompts": {},
+  "sessions": {
+    "s_8b5336c3db4e0c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4adf6ea3-ecb7-4fe3-88ec-441eae394d30",
+        "model": "unknown"
+      },
+      "human_author": "chitucao <2469589812@qq.com>"
+    }
+  }
+}
