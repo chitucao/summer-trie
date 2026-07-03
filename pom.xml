@@ -6,7 +6,7 @@
 
     <groupId>top.chitucao.summerframework</groupId>
     <artifactId>summer-trie</artifactId>
-    <version>1.1.5.RELEASE</version>
+    <version>1.1.6-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -28,6 +28,7 @@
         1.1.2.RELEASE 支持自定义节点类型
         1.1.4.RELEASE 修复并发更新问题
         1.1.5.RELEASE 支持线程安全的trie节点
+        1.1.6.RELEASE 优化几处并发问题,内存优化,查询方法优化,新增动态hash节点,添加性能测试
     </description>
 
     <developers>
@@ -199,18 +200,29 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <profiles>
+        <!-- 发布到 Maven Central(Sonatype Central Portal)：仅在 -Pcentral 时启用，
+             central-publishing 插件用 extensions 接管 deploy 阶段，避免与公司 Nexus 默认发布冲突。
+             用中央仓库 settings：mvn -Pcentral clean deploy -s <settings-sonatype.xml>
+             快照(-SNAPSHOT)自动走 centralSnapshotsUrl、无需 GPG；正式版再叠加 -Prelease 做签名。 -->
+        <profile>
+            <id>central</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.10.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>ossrh</publishingServerId>
+                            <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
+                            <autoPublish>true</autoPublish>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>
@@ -247,20 +259,26 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.central</groupId>
-                        <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.4.0</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <!-- 这里的serverId是之前在settings.xml中配置的 -->
-                            <publishingServerId>ossrh</publishingServerId>
-                            <tokenAuth>true</tokenAuth>
-                        </configuration>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
+
+    <!-- 公司 Nexus 发布地址(默认 deploy 目标)：mvn clean deploy -s <公司 settings.xml>；
+         server id 与公司 settings.xml 的 nexus-snapshots / nexus-releases 对应。
+         推 Maven Central 时改用 -Pcentral(该 profile 的插件会接管 deploy，本节点被忽略)。 -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <name>nexus-snapshots</name>
+            <url>http://nexus.17usoft.com/repository/mvn-flight-snapshot/</url>
+            <uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <name>nexus-releases</name>
+            <url>http://nexus.17usoft.com/repository/mvn-flight-release/</url>
+        </repository>
+    </distributionManagement>
 
 </project>

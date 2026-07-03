@@ -985,11 +985,16 @@ public class TrieTest {
                 .and(FlightTrieIndexNames.INDEX_ARR_CITY_CODE).eq(arrCityCode)
 
         );
-        trieResult.sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+        // 查询结果本质是无序集合：仅按业务键(出发日期&出发地&抵达地)排序时，同一分组内所有元素业务键相同，
+        // 排序退化为不排序，trie 遍历序与 hashmap 插入序不一致会让顺序敏感的 isEqualList 偶发失败。
+        // 追加 toString(与 equals 同源、覆盖全字段)作为 tie-break 形成全序，使相同多重集排序后严格对齐，比较即与顺序无关。
+        Comparator<FlightResourceDO> byContentThenAll = Comparator
+            .comparing((FlightResourceDO e) -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity())
+            .thenComparing(FlightResourceDO::toString);
+        trieResult.sort(byContentThenAll);
 
         List<FlightResourceDO> hashMapResult2 = hashMapCache2.get(DateUtil.format(depDate, DatePattern.PURE_DATE_PATTERN) + "&" + depCityCode + "&" + arrCityCode);
-        hashMapResult2
-            .sort(Comparator.comparing(e -> DateUtil.format(e.getDepartureTime(), DatePattern.PURE_DATE_PATTERN) + "&" + e.getDepartureCity() + "&" + e.getArrivalCity()));
+        hashMapResult2.sort(byContentThenAll);
         TestCase.assertTrue(CollectionUtil.isEqualList(trieResult, hashMapResult2));
 
         // 查询时间复杂度是一样的，同时解决了上面hashmap的几个问题，并且还有以下几个好处
