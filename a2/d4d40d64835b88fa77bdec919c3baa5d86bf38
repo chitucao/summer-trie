@@ -1,0 +1,21 @@
+.gitignore
+  s_8b5336c3db4e0c::t_3138e2247ed499 71-74
+docs/优化报告.md
+  s_8b5336c3db4e0c::t_40011236c45694 1-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "a2d4d40d64835b88fa77bdec919c3baa5d86bf38",
+  "prompts": {},
+  "sessions": {
+    "s_8b5336c3db4e0c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4adf6ea3-ecb7-4fe3-88ec-441eae394d30",
+        "model": "unknown"
+      },
+      "human_author": "chitucao <2469589812@qq.com>"
+    }
+  }
+}
