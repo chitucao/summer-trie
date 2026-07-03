@@ -247,7 +247,12 @@ public class DefaultNodeManager implements NodeManager {
         if (Objects.isNull(criterion)) {
             return;
         }
-        cur.setChildren(search(cur, criterion));
+        // P1-1: search(...) 可能返回 NavigableMap 子视图，setChildren 前必须物化成独立 Map，
+        // 否则 view 与原 children 共享底层存储，后续写操作会相互影响。
+        Map<K, Node<K>> result = search(cur, criterion);
+        @SuppressWarnings("unchecked")
+        Map<K, Node<K>> snapshot = NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result);
+        cur.setChildren(snapshot);
     }
 
     /**
@@ -261,7 +266,10 @@ public class DefaultNodeManager implements NodeManager {
         if (Objects.isNull(criterion)) {
             return;
         }
-        for (K k : search(cur, criterion).keySet()) {
+        // P1-1: search(...) 可能返回 NavigableMap 子视图（与底层共享存储），迭代同时修改底层会 CME；
+        // 先把命中的 key 快照到 ArrayList 再逐个删除。
+        java.util.List<K> keys = new java.util.ArrayList<>(search(cur, criterion).keySet());
+        for (K k : keys) {
             cur.children().remove(k);
         }
     }

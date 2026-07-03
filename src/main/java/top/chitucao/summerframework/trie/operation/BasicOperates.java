@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import top.chitucao.summerframework.trie.configuration.property.Property;
 import top.chitucao.summerframework.trie.node.Node;
 import top.chitucao.summerframework.trie.node.NodeFactoryRegistry;
+import top.chitucao.summerframework.trie.utils.FilteredChildMap;
 
 /**
  * 基本操作实现
@@ -31,88 +32,57 @@ public class BasicOperates {
     };
 
     // 不等于
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图，避免每次新建 HashMap 并物化所有命中节点
     public static final Operate HASH_MAP_NE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (Objects.equals(entry.getKey(), key)) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue());
-        }
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> !Objects.equals(entry.getKey(), key));
     };
 
     // 大于
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_GT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (((Comparable) entry.getKey()).compareTo(key) > 0) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(key) > 0);
     };
 
     // 大于等于
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_GTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (((Comparable) entry.getKey()).compareTo(key) >= 0) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(key) >= 0);
     };
 
     // 小于
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_LT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (((Comparable) entry.getKey()).compareTo(key) < 0) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(key) < 0);
     };
 
     // 小于等于
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_LTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (((Comparable) entry.getKey()).compareTo(key) <= 0) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(key) <= 0);
     };
 
     // 区间
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_BETWEEN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
@@ -126,36 +96,23 @@ public class BasicOperates {
             return childMap;
         }
 
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
         if (Objects.nonNull(left) && Objects.nonNull(right)) {
             if (left.compareTo(right) > 0) {
                 return childMap;
             }
-            for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
+            return new FilteredChildMap(childMap, (Map.Entry entry) -> {
                 Comparable entryKey = (Comparable) entry.getKey();
-                if (entryKey.compareTo(left) >= 0 && entryKey.compareTo(right) <= 0) {
-                    result.put(entry.getKey(), entry.getValue());
-                }
-            }
+                return entryKey.compareTo(left) >= 0 && entryKey.compareTo(right) <= 0;
+            });
         } else if (Objects.nonNull(left)) {
-            for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-                if (((Comparable) entry.getKey()).compareTo(left) >= 0) {
-                    result.put(entry.getKey(), entry.getValue());
-                }
-            }
+            return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(left) >= 0);
         } else {
-            for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-                if (((Comparable) entry.getKey()).compareTo(right) <= 0) {
-                    result.put(entry.getKey(), entry.getValue());
-                }
-            }
+            return new FilteredChildMap(childMap, (Map.Entry entry) -> ((Comparable) entry.getKey()).compareTo(right) <= 0);
         }
-
-        return result;
     };
 
     // 包含
-    // hashMap O(n)
+    // hashMap 单值 O(1)、多值 O(n)，P1-2b: 多值分支返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_IN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
@@ -167,10 +124,9 @@ public class BasicOperates {
             return childMap;
         }
 
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-
-        // 优化单条数据的in操作
+        // 优化单条数据的 in 操作：走 O(1) 的 HashMap.get
         if (keys.size() == 1) {
+            Map result = NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren();
             Object key1 = keys.iterator().next();
             Node<?> childNode = childMap.get(key1);
             if (Objects.nonNull(childNode)) {
@@ -179,17 +135,11 @@ public class BasicOperates {
             return result;
         }
 
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (keys.contains(entry.getKey())) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> keys.contains(entry.getKey()));
     };
 
     // 不包含
-    // hashMap O(n)
+    // hashMap O(n)，P1-2b: 返回 FilteredChildMap 懒视图
     public static final Operate HASH_MAP_NIN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
@@ -201,14 +151,7 @@ public class BasicOperates {
             return childMap;
         }
 
-        Map result = (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
-        for (Map.Entry<?, Node<?>> entry : childMap.entrySet()) {
-            if (!keys.contains(entry.getKey())) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return result;
+        return new FilteredChildMap(childMap, (Map.Entry entry) -> !keys.contains(entry.getKey()));
     };
 
     //---------------------------------------- TREE_MAP操作 ----------------------------------------
@@ -245,51 +188,48 @@ public class BasicOperates {
     };
 
     // 大于
-    // treeMap O(logn + m)
+    // treeMap O(log n + m)，直接返回 NavigableMap 子视图，避免 new TreeMap<>(result) 的 O(m log m) 拷贝；
+    // 调用方只做只读遍历，写操作路径（slice/remove/normErase）已改为显式快照。
     public static final Operate NAVIGABLE_MAP_GT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, false);
-        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+        return ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, false);
     };
 
     // 大于等于
-    // treeMap O(logn + m)
+    // treeMap O(log n + m)，返回子视图（见 NAVIGABLE_MAP_GT_OP 注释）
     public static final Operate NAVIGABLE_MAP_GTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, true);
-        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+        return ((NavigableMap<Object, Node<?>>) childMap).tailMap(key, true);
     };
 
     // 小于
-    // treeMap O(logn + m)
+    // treeMap O(log n + m)，返回子视图（见 NAVIGABLE_MAP_GT_OP 注释）
     public static final Operate NAVIGABLE_MAP_LT_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(key, false);
-        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+        return ((NavigableMap<Object, Node<?>>) childMap).headMap(key, false);
     };
 
     // 小于等于
-    // treeMap O(logn + m)
+    // treeMap O(log n + m)，返回子视图（见 NAVIGABLE_MAP_GT_OP 注释）
     public static final Operate NAVIGABLE_MAP_LTE_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
             return childMap;
         }
-        NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(key, true);
-        return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+        return ((NavigableMap<Object, Node<?>>) childMap).headMap(key, true);
     };
 
     // 区间
-    // treeMap O(logn + m)
+    // treeMap O(log n + m)，返回子视图（见 NAVIGABLE_MAP_GT_OP 注释）
     public static final Operate NAVIGABLE_MAP_BETWEEN_OP = (childMap, property, value) -> {
         Object key = mapperDictKey(property, value);
         if (childMap.isEmpty() || Objects.isNull(key)) {
@@ -300,19 +240,16 @@ public class BasicOperates {
         Comparable right = range.get(1);
 
         if (Objects.isNull(left) && Objects.isNull(right)) {
-            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren((Map) childMap));
+            return childMap;
         } else if (Objects.nonNull(left) && Objects.nonNull(right)) {
             if (left.compareTo(right) > 0) {
-                return (Map) (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren());
+                return (Map) NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren();
             }
-            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).subMap(left, true, right, true);
-            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+            return ((NavigableMap<Object, Node<?>>) childMap).subMap(left, true, right, true);
         } else if (Objects.nonNull(left)) {
-            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).tailMap(left, true);
-            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+            return ((NavigableMap<Object, Node<?>>) childMap).tailMap(left, true);
         } else {
-            NavigableMap result = ((NavigableMap<Object, Node<?>>) childMap).headMap(right, true);
-            return (NodeFactoryRegistry.getInstance().getNodeFactory(property.nodeType()).newChildren(result));
+            return ((NavigableMap<Object, Node<?>>) childMap).headMap(right, true);
         }
     };
 

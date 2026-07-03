@@ -229,7 +229,9 @@ public class MapTrie<T> implements Trie<T> {
                 // 负数表示完全删除子节点，所以父节点中这个key也可以删除了
                 return -dictKeySet.size();
             } else {
-                Set<?> dictKeySet = nodeManager.search(cur, criterion).keySet();
+                // P1-1: search 可能返回 NavigableMap 子视图，removeChild 会改动底层 children，
+                // 直接迭代 keySet 会 CME；先快照成独立 Set 再删除。
+                Set<?> dictKeySet = new HashSet<>(nodeManager.search(cur, criterion).keySet());
                 for (Object dictKey : dictKeySet) {
                     nodeManager.removeChild((Node<Object>) cur, dictKey);
                 }
@@ -238,22 +240,24 @@ public class MapTrie<T> implements Trie<T> {
             }
         }
 
+        // P1-1: childMap 可能是 FilteredChildMap (只读) 或 NavigableMap 子视图 (修改会影响底层)，
+        // 不能再靠 iterator.remove() 删除空子节点；先把 entry 快照到独立列表，再通过 cur.children().remove(key) 显式删除。
         Map<?, ? extends Node<?>> childMap = Objects.isNull(criterion) ? cur.children() : nodeManager.search(cur, criterion);
+        List<Map.Entry<Object, Node<Object>>> entries = new ArrayList<>(childMap.size());
+        for (Map.Entry<?, ? extends Node<?>> e : childMap.entrySet()) {
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            Map.Entry<Object, Node<Object>> cast = (Map.Entry) e;
+            entries.add(cast);
+        }
         int sum = 0;
-        Iterator<? extends Map.Entry<?, ? extends Node<?>>> iterator = childMap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<?, ? extends Node<?>> entry = iterator.next();
+        for (Map.Entry<Object, Node<Object>> entry : entries) {
             int removeCount = doNormErase(entry.getValue(), nodeManager.next(), criterionMap);
             if (removeCount < 0) {
-                if (Objects.isNull(criterion)) {
-                    // childMap 即真实子节点映射，迭代器安全删除
-                    iterator.remove();
-                } else {
-                    // childMap 是 search 过滤出的副本，iterator.remove 只动副本；必须从真实节点删除被完全清空的子节点，
-                    // 否则残留孤儿子树（字典已清空，dataSearch 会返回一串 null）。字典key的清理仍交给 decrNodeKeyCount（共享key安全）
-                    //noinspection unchecked
-                    ((Node<Object>) cur).removeChild(entry.getKey());
-                }
+                // 子树被完全清空 → 从真实节点删除该 key。entries 已快照，childMap 可能是 FilteredChildMap(只读)
+                // 或 NavigableMap 子视图，不能用 iterator.remove；removeChild 对 AbstractMapNode/AdaptiveNode(含数组模式)
+                // 均能正确删除，避免残留孤儿子树（字典已清空，dataSearch 会返回一串 null）。字典 key 清理仍交 decrNodeKeyCount。
+                //noinspection unchecked
+                ((Node<Object>) cur).removeChild(entry.getKey());
             }
             int removeCountAbs = Math.abs(removeCount);
             Property<?, ?, Object> property = nodeManager.property();
@@ -280,13 +284,23 @@ public class MapTrie<T> implements Trie<T> {
         int maxCriteriaLevel = getMaxCriteriaLevel(criterionMap);
         Iterator<NodeManager> iterator = nodeManagers.iterator();
 
-        Stream<Node<?>> cur = Stream.of(root);
+        // P1-3: Stream.flatMap 改 List + for，消除每层 Stream/lambda 分配
+        List<Node<?>> cur = new ArrayList<>(1);
+        cur.add(root);
         for (int i = 0; i < maxCriteriaLevel; i++) {
             NodeManager nodeManager = iterator.next();
-            cur = cur.flatMap(e -> nodeManager.search(e, criterionMap.get(nodeManager.property().name())).values().stream());
+            Criterion criterion = criterionMap.get(nodeManager.property().name());
+            List<Node<?>> next = new ArrayList<>(cur.size());
+            for (Node<?> node : cur) {
+                next.addAll(nodeManager.search(node, criterion).values());
+            }
+            cur = next;
         }
         NodeManager lastNodemanager = iterator.next();
-        cur.forEach(e -> lastNodemanager.remove(e, criterionMap.get(lastNodemanager.property().name())));
+        Criterion lastCriterion = criterionMap.get(lastNodemanager.property().name());
+        for (Node<?> node : cur) {
+            lastNodemanager.remove(node, lastCriterion);
+        }
     }
 
     /**
