@@ -54,8 +54,9 @@ import top.chitucao.summerframework.trie.utils.Pair;
  */
 public class TrieTest {
 
-    // 改成你自己的resouce路径
-    private static final String RESOUCE_FOLDER = "D:\\Develop\\Personal\\category_project\\summer-trie\\src\\test\\resources\\";
+    // 资源目录：解析到测试 classpath 根(target/test-classes，Maven 会把 src/test/resources 复制过去)，
+    // 随项目位置自动生效，避免硬编码绝对路径（工程移动后仍可用）
+    private static final String RESOUCE_FOLDER = new File(TrieTest.class.getResource("/").getFile()).getAbsolutePath() + File.separator;
 
     @Test
     public void testTreeNode() {

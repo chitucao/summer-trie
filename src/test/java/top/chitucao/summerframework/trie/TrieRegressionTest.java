@@ -42,7 +42,8 @@ import top.chitucao.summerframework.trie.utils.FilteredChildMap;
  */
 public class TrieRegressionTest {
 
-    private static final String RESOURCE_FOLDER = "D:\\Develop\\Personal\\category_project\\summer-trie\\src\\test\\resources\\";
+    // 资源目录：解析到测试 classpath 根，随项目位置自动生效（避免硬编码绝对路径，工程移动后仍可用）
+    private static final String RESOURCE_FOLDER = new File(TrieRegressionTest.class.getResource("/").getFile()).getAbsolutePath() + File.separator;
 
     private static final String DATA_FILE       = "train_resource_3000.json";
 
