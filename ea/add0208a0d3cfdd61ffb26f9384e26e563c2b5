@@ -1,0 +1,33 @@
+docs/ARCHITECTURE_ANALYSIS.md
+  s_8070e6dea177bc::t_dd9075901c6de1 1-543
+"docs/summer-trie 针对 百万级 + 读多写少 + 位图混合的优化方案.md"
+  s_8070e6dea177bc::t_c79291dc77c672 1-130
+src/main/java/top/chitucao/summerframework/trie/MapTrie.java
+  s_8070e6dea177bc::t_994c8126f74b7c 232-234,243-244,246-251,253,256-260,287-289,292-297,300-303
+src/main/java/top/chitucao/summerframework/trie/nodemanager/DefaultNodeManager.java
+  s_8070e6dea177bc::t_fbc125678ce8ba 250-255,269-272
+src/main/java/top/chitucao/summerframework/trie/operation/BasicOperates.java
+  s_8070e6dea177bc::t_ce48423d98295e 9,35,41,45,51,55,61,65,71,75,81,85,103,105-106,108,110,115,127,129,138,142,154,191-192,198,202,208,212,218,222,228,232,243,246,248,250,252,332
+src/main/java/top/chitucao/summerframework/trie/utils/FilteredChildMap.java
+  s_8070e6dea177bc::t_183fd26df679b6 1-273
+src/test/java/top/chitucao/summerframework/trie/TrieRegressionTest.java
+  s_8070e6dea177bc::t_7d78fcd90322af 1-264
+src/test/java/top/chitucao/summerframework/trie/utils/FilteredChildMapTest.java
+  s_8070e6dea177bc::t_6ccec6985c2e0a 1-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "eaadd0208a0d3cfdd61ffb26f9384e26e563c2b5",
+  "prompts": {},
+  "sessions": {
+    "s_8070e6dea177bc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9c82046f-e564-4bea-ba5a-c23ca37a09f6",
+        "model": "unknown"
+      },
+      "human_author": "chitucao <2469589812@qq.com>"
+    }
+  }
+}
