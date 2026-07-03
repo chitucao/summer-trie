@@ -63,8 +63,11 @@ node_modules
 
 ### custom ###
 
-# KC-Chat 运行时产物（插件自动生成，请勿入库）
-.cursor/mcp.json
-.cursor/kc-mcp/
-.cursor/kc-mcp-messages/
-.cursor/kc-chat-exports/
+# 本地 IDE / 协作插件产物（请勿入库）
+.cursor/
+
+# 内部对比基准（依赖内部数据与本地安装的 summer-bitmap，仅本地保留，请勿入库）
+# 平时放 local-compare/ 下（不参与 maven 编译）；要跑对比时移回 src/test 并临时加 summer-bitmap/easyexcel/slf4j 依赖
+local-compare/
+src/test/java/top/chitucao/summerframework/trie/compare/
+src/test/resources/*.xlsx
