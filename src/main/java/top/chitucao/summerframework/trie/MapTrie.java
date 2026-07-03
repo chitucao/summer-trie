@@ -55,7 +55,6 @@ public class MapTrie<T> implements Trie<T> {
 
     public MapTrie(Configuration configuration) {
         checkAndResolveConfiguration(configuration);
-        resolveCompactReadOnly(configuration);
         this.configuration = configuration;
         NodeManagerFactory nodeManagerFactory = new DefaultNodeManagerFactory(configuration);
         this.nodeManagers = nodeManagerFactory.createNodeManagers();
@@ -1204,25 +1203,6 @@ public class MapTrie<T> implements Trie<T> {
             sumSize += doGetSize(child, depth + 1, maxDepth);
         }
         return sumSize;
-    }
-
-    /**
-     * 紧凑只读模式解析：把 AutoMapping 的默认 HashMapDict 换成更省内存的 ArrayDict
-     * -1.节点层(哈希层->ADAPTIVE_HASH)的切换在 {@link top.chitucao.summerframework.trie.nodemanager.DefaultNodeManager#createNewNode} 处理；
-     * -2.仅替换"默认 HashMapDict"，用户自定义传入的字典保持不变；
-     *
-     * @param configuration 配置
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void resolveCompactReadOnly(Configuration configuration) {
-        if (!configuration.isCompactReadOnly()) {
-            return;
-        }
-        for (Property property : configuration.getProperties()) {
-            if (property instanceof AutoMappingProperty && property.getDict() instanceof HashMapDict) {
-                ((AbstractDictProperty) property).setDict(new ArrayDict<>());
-            }
-        }
     }
 
     /**

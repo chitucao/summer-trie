@@ -26,7 +26,7 @@ public class DefaultNodeManagerFactory implements NodeManagerFactory {
         Collection<Property> properties = configuration.getProperties();
         LinkedList<NodeManager> nodeManagers = new LinkedList<>();
         for (Property<?, ?, ?> property : properties) {
-            nodeManagers.add(new DefaultNodeManager(property, configuration.isCompactReadOnly()));
+            nodeManagers.add(new DefaultNodeManager(property));
         }
         nodeManagers.sort(Comparator.comparing(m -> m.property().level()));
         NodeManager tail = nodeManagers.get(0);
